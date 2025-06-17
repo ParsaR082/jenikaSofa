@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Main palette - warm neutrals with accent */
+    --background: 36 33% 98%;     /* Cream background */
+    --foreground: 24 38% 22%;     /* Deep brown text */
+    
+    --primary: 24 38% 22%;        /* Deep brown */
+    --primary-foreground: 36 100% 99%;  /* Off-white */
+    
+    --secondary: 32 30% 88%;      /* Light taupe */
+    --secondary-foreground: 24 38% 22%;  /* Deep brown */
+    
+    --accent: 18 75% 55%;         /* Terracotta/rust */
+    --accent-foreground: 36 100% 99%;  /* Off-white */
+    
+    --muted: 30 20% 96%;          /* Soft beige */
+    --muted-foreground: 24 10% 40%;  /* Muted brown */
+    
+    --card: 36 33% 98%;           /* Cream */
+    --card-foreground: 24 38% 22%;  /* Deep brown */
+    
+    --popover: 36 33% 98%;        /* Cream */
+    --popover-foreground: 24 38% 22%;  /* Deep brown */
+
+    --destructive: 0 84% 60%;     /* Red */
+    --destructive-foreground: 36 100% 99%;  /* Off-white */
+
+    --border: 30 15% 85%;         /* Light beige border */
+    --input: 30 15% 85%;          /* Light beige input */
+    --ring: 24 38% 22%;           /* Deep brown ring */
+
+    --radius: 0.5rem;             /* Rounded corners */
+  }
+ 
+  .dark {
+    /* Dark mode - more muted, elegant dark tones */
+    --background: 30 15% 12%;     /* Very dark brown background */
+    --foreground: 36 33% 98%;     /* Cream text */
+    
+    --primary: 30 15% 15%;        /* Dark brown */
+    --primary-foreground: 36 33% 98%;  /* Cream */
+    
+    --secondary: 32 15% 25%;      /* Dark taupe */
+    --secondary-foreground: 36 33% 98%;  /* Cream */
+    
+    --accent: 18 50% 40%;         /* Dark terracotta */
+    --accent-foreground: 36 33% 98%;  /* Cream */
+    
+    --muted: 30 15% 20%;          /* Muted dark brown */
+    --muted-foreground: 30 20% 70%;  /* Light beige */
+    
+    --card: 30 15% 18%;           /* Dark card */
+    --card-foreground: 36 33% 98%;  /* Cream */
+    
+    --popover: 30 15% 18%;        /* Dark popover */
+    --popover-foreground: 36 33% 98%;  /* Cream */
+
+    --destructive: 0 62% 50%;     /* Darker red */
+    --destructive-foreground: 36 33% 98%;  /* Cream */
+
+    --border: 30 15% 30%;         /* Dark beige border */
+    --input: 30 15% 30%;          /* Dark beige input */
+    --ring: 18 75% 55%;           /* Terracotta ring */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Custom styles for RTL support */
+html[dir="rtl"] .space-x-4 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-x-reverse: 1;
+}
+
+html[dir="rtl"] .space-x-2 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-x-reverse: 1;
+}
+
+html[dir="rtl"] .space-x-6 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-x-reverse: 1;
+}
+
+html[dir="rtl"] .space-x-8 > :not([hidden]) ~ :not([hidden]) {
+  --tw-space-x-reverse: 1;
+} 

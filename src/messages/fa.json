@@ -1,0 +1,82 @@
+{
+  "common": {
+    "home": "خانه",
+    "products": "محصولات",
+    "about": "درباره ما",
+    "contact": "تماس با ما",
+    "account": "حساب کاربری",
+    "cart": "سبد خرید",
+    "search": "جستجو",
+    "login": "ورود",
+    "register": "ثبت نام",
+    "logout": "خروج"
+  },
+  "home": {
+    "hero": {
+      "title": "مبلمان با کیفیت برای خانه شما",
+      "subtitle": "مجموعه‌ای از مبلمان با طراحی مدرن و کیفیت بالا برای زیباتر کردن فضای زندگی شما",
+      "cta": "مشاهده محصولات"
+    },
+    "featured": {
+      "title": "محصولات پرفروش",
+      "subtitle": "مجموعه‌ای از محبوب‌ترین محصولات ما",
+      "viewAll": "مشاهده همه محصولات"
+    }
+  },
+  "products": {
+    "title": "محصولات",
+    "filter": {
+      "category": "دسته بندی",
+      "price": "قیمت",
+      "sort": "مرتب سازی",
+      "newest": "جدیدترین",
+      "priceLowToHigh": "قیمت: کم به زیاد",
+      "priceHighToLow": "قیمت: زیاد به کم",
+      "popular": "محبوب ترین"
+    },
+    "addToCart": "افزودن به سبد خرید",
+    "outOfStock": "ناموجود",
+    "inStock": "موجود"
+  },
+  "product": {
+    "details": "جزئیات محصول",
+    "features": "ویژگی‌های محصول",
+    "dimensions": "ابعاد",
+    "width": "عرض",
+    "height": "ارتفاع",
+    "depth": "عمق",
+    "relatedProducts": "محصولات مشابه",
+    "addToCart": "افزودن به سبد خرید",
+    "addToWishlist": "افزودن به علاقه‌مندی‌ها"
+  },
+  "account": {
+    "dashboard": "داشبورد",
+    "orders": "سفارش‌ها",
+    "profile": "ویرایش پروفایل",
+    "addresses": "آدرس‌ها",
+    "wishlist": "علاقه‌مندی‌ها",
+    "orderDetails": "جزئیات سفارش",
+    "personalInfo": "اطلاعات شخصی",
+    "editInfo": "ویرایش اطلاعات"
+  },
+  "admin": {
+    "dashboard": "داشبورد",
+    "products": "محصولات",
+    "orders": "سفارش‌ها",
+    "customers": "مشتریان",
+    "settings": "تنظیمات",
+    "addProduct": "افزودن محصول جدید",
+    "editProduct": "ویرایش محصول",
+    "deleteProduct": "حذف محصول",
+    "productName": "نام محصول",
+    "productPrice": "قیمت محصول",
+    "productDescription": "توضیحات محصول",
+    "productImages": "تصاویر محصول",
+    "productFeatures": "ویژگی‌های محصول",
+    "productDimensions": "ابعاد محصول",
+    "saveProduct": "ذخیره محصول"
+  },
+  "footer": {
+    "copyright": "© ۱۴۰۳ مبلمان. تمامی حقوق محفوظ است."
+  }
+} 
