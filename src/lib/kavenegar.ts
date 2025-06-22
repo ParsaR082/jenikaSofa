@@ -1,4 +1,4 @@
-import Kavenegar from 'kavenegar';
+import { KavenegarApi } from 'kavenegar';
 
 // Get API key from environment variables - using a function to ensure it's loaded at runtime
 const getApiKey = () => process.env.KAVENEGAR_API_KEY || '';
@@ -11,7 +11,7 @@ const getApi = () => {
     console.warn('KAVENEGAR_API_KEY is not set in environment variables');
   }
   
-  return Kavenegar.KavenegarApi({
+  return KavenegarApi({
     apikey: apiKey
   });
 };

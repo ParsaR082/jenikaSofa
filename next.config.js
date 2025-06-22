@@ -6,9 +6,6 @@ const withNextIntl = require('next-intl/plugin')(
 const nextConfig = {
   images: {
     domains: ['utfs.io', 'res.cloudinary.com'],
-  },
-  env: {
-    _next_intl_trailing_slash: ''
   }
 };
 
