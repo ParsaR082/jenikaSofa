@@ -11,9 +11,6 @@ if (isRailway) {
   console.log('Running in Railway environment, setting up OpenSSL...');
   
   try {
-    // Install OpenSSL 1.1 if not already installed
-    console.log('Ensuring OpenSSL 1.1 is installed...');
-    
     // Generate Prisma client with the correct binary target
     console.log('Generating Prisma client...');
     execSync('npx prisma generate', { 
