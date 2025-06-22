@@ -16,7 +16,10 @@
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
     "docker:build": "docker-compose build",
-    "docker:restart": "docker-compose restart"
+    "docker:restart": "docker-compose restart",
+    "railway:migrate": "node scripts/migrate-db.js",
+    "postinstall": "prisma generate",
+    "prebuild": "prisma generate"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"

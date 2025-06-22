@@ -6,7 +6,17 @@ const withNextIntl = require('next-intl/plugin')(
 const nextConfig = {
   images: {
     domains: ['utfs.io', 'res.cloudinary.com'],
-  }
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: '**',
+      },
+    ],
+  },
+  // Add Railway-specific configurations
+  poweredByHeader: false,
+  reactStrictMode: true,
+  swcMinify: true,
 };
 
 module.exports = withNextIntl(nextConfig); 
