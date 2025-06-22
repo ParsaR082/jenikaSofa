@@ -8,8 +8,9 @@ WORKDIR /app
 
 # Install dependencies based on the preferred package manager
 COPY package.json package-lock.json* ./
-# Copy scripts directory for postinstall script
+# Copy scripts and prisma directories for postinstall script
 COPY scripts ./scripts/
+COPY prisma ./prisma/
 RUN npm ci
 
 # Rebuild the source code only when needed
