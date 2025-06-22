@@ -19,8 +19,8 @@
     "docker:restart": "docker-compose restart",
     "railway:migrate": "node scripts/migrate-db.js",
     "prisma:setup": "node scripts/prisma-setup.js",
-    "postinstall": "node scripts/prisma-setup.js",
-    "prebuild": "node scripts/prisma-setup.js"
+    "postinstall": "npx prisma generate",
+    "prebuild": "npx prisma generate"
   },
   "prisma": {
     "seed": "ts-node prisma/seed.ts"
