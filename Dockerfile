@@ -2,8 +2,14 @@ FROM node:18-alpine AS base
 
 # Install dependencies only when needed
 FROM base AS deps
-# Add OpenSSL for Prisma
-RUN apk add --no-cache libc6-compat openssl
+# Add OpenSSL for Prisma with specific version support
+RUN apk add --no-cache libc6-compat openssl openssl-dev
+
+# Create symlinks for libssl and libcrypto to support Prisma
+RUN mkdir -p /lib
+RUN ln -s /usr/lib/libssl.so /lib/libssl.so.1.1
+RUN ln -s /usr/lib/libcrypto.so /lib/libcrypto.so.1.1
+
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
@@ -34,8 +40,11 @@ WORKDIR /app
 ENV NODE_ENV production
 ENV NEXT_TELEMETRY_DISABLED 1
 
-# Install OpenSSL for Prisma in production
-RUN apk add --no-cache openssl
+# Install OpenSSL for Prisma in production with symlinks
+RUN apk add --no-cache openssl openssl-dev
+RUN mkdir -p /lib
+RUN ln -s /usr/lib/libssl.so /lib/libssl.so.1.1
+RUN ln -s /usr/lib/libcrypto.so /lib/libcrypto.so.1.1
 
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs

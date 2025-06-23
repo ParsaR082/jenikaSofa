@@ -31,6 +31,15 @@ const product = {
   ]
 };
 
+// Generate static params for product IDs
+export function generateStaticParams() {
+  // For demo purposes, we'll pre-render products with IDs 1-10
+  return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(id => ({
+    id: id.toString(),
+    locale: 'fa'
+  }));
+}
+
 export default function ProductDetailPage({ params }: { params: { id: string, locale: string } }) {
   const locale = params.locale;
   

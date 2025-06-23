@@ -1,11 +1,16 @@
 [phases.setup]
-nixPkgs = ["nodejs", "postgresql", "openssl"]
+nixPkgs = ["nodejs", "postgresql", "openssl", "openssl-dev"]
 
 [phases.install]
 cmds = ["npm ci"]
+dependsOn = ["setup"]
 
 [phases.build]
 cmds = ["npx prisma generate", "npm run build"]
+dependsOn = ["install"]
 
 [start]
-cmd = "npm start" 
+cmd = "npm start"
+
+[env]
+PRISMA_SKIP_LIBSSL_COPY = "1" 

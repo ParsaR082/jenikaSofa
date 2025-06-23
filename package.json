@@ -4,8 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "cross-env DATABASE_URL=postgresql://mobleman:mobleman_password@localhost:5433/mobleman_db next dev",
-    "build": "next build",
-    "start": "next start",
+    "build": "node scripts/prisma-setup.js && next build",
+    "start": "node scripts/prisma-setup.js && next start",
     "lint": "next lint",
     "db:setup": "node -r ts-node/register prisma/seed.ts",
     "db:push": "prisma db push",
@@ -19,7 +19,7 @@
     "docker:restart": "docker-compose restart",
     "railway:migrate": "node scripts/migrate-db.js",
     "prisma:setup": "node scripts/prisma-setup.js",
-    "postinstall": "npx prisma generate",
+    "postinstall": "node scripts/prisma-setup.js",
     "prebuild": "npx prisma generate"
   },
   "prisma": {

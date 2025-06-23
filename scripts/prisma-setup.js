@@ -11,6 +11,25 @@ if (isRailway) {
   console.log('Running in Railway environment, setting up OpenSSL...');
   
   try {
+    // Set environment variables to help Prisma find OpenSSL
+    process.env.PRISMA_SKIP_LIBSSL_COPY = "1";
+    
+    // Create symlinks for OpenSSL if they don't exist
+    try {
+      if (!fs.existsSync('/lib/libssl.so.1.1')) {
+        console.log('Creating symlink for libssl.so.1.1...');
+        execSync('mkdir -p /lib && ln -sf /usr/lib/libssl.so /lib/libssl.so.1.1', { stdio: 'inherit' });
+      }
+      
+      if (!fs.existsSync('/lib/libcrypto.so.1.1')) {
+        console.log('Creating symlink for libcrypto.so.1.1...');
+        execSync('mkdir -p /lib && ln -sf /usr/lib/libcrypto.so /lib/libcrypto.so.1.1', { stdio: 'inherit' });
+      }
+    } catch (symlinkError) {
+      console.warn('Warning: Could not create OpenSSL symlinks. This might be due to permissions:', symlinkError);
+      // Continue anyway as the Dockerfile should have created these
+    }
+    
     // Generate Prisma client with the correct binary target
     console.log('Generating Prisma client...');
     execSync('npx prisma generate', { 
