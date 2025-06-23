@@ -1,6 +1,9 @@
 import Link from 'next/link';
 
 export default function NotFound() {
+  // Use a fixed locale for the not-found page to avoid internationalization issues
+  const defaultLocale = 'fa';
+  
   return (
     <div className="flex items-center justify-center min-h-screen bg-gray-100">
       <div className="text-center p-8 bg-white rounded-lg shadow-md">
@@ -8,7 +11,7 @@ export default function NotFound() {
         <h2 className="text-2xl font-medium text-gray-600 mb-6">صفحه مورد نظر یافت نشد</h2>
         <p className="text-gray-500 mb-8">صفحه‌ای که به دنبال آن هستید وجود ندارد یا حذف شده است.</p>
         <Link 
-          href="/"
+          href={`/${defaultLocale}`}
           className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
         >
           بازگشت به صفحه اصلی

@@ -1,8 +1,14 @@
+import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { AdminLayout } from '@/components/layout/admin-layout';
 
-export default function AddProductPage() {
+export default function AdminProductsAddPage() {
+  // Redirect to default locale admin products add page
+  redirect('/fa/admin/products/add');
+}
+
+export function AddProductPage() {
   return (
     <AdminLayout>
       <div className="flex items-center justify-between mb-6">

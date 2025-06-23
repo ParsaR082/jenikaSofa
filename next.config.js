@@ -19,6 +19,10 @@ const nextConfig = {
   swcMinify: true,
   // Configure output for Railway
   output: 'standalone',
+  // Use dynamic rendering for internationalization
+  i18n: {
+    localeDetection: false
+  },
   // Disable static exports for problematic routes
   experimental: {
     // This will allow Next.js to skip prerendering pages with dynamic data
@@ -34,4 +38,9 @@ const nextConfig = {
   },
 };
 
-module.exports = withNextIntl(nextConfig); 
+module.exports = withNextIntl({
+  ...nextConfig,
+  // Force all pages to be server-side rendered to avoid static export issues
+  // with internationalization
+  trailingSlash: true
+}); 
