@@ -3,6 +3,14 @@ import { prisma } from '@/lib/prisma';
 import bcrypt from 'bcrypt';
 import { cookies } from 'next/headers';
 import { sign } from 'jsonwebtoken';
+import {
+  SECURITY_CONFIG,
+  authSchemas,
+  getClientIP,
+  checkRateLimit,
+  resetRateLimit,
+  validateAndSanitize
+} from '@/lib/security';
 
 // Secret key for JWT - in production, use environment variables
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
@@ -12,84 +20,163 @@ const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 declare const users: Record<string, { username: string, fullName: string, phoneNumber: string }>;
 
 export async function POST(request: NextRequest) {
+  const clientIP = getClientIP(request);
+  const rateLimitKey = `login:${clientIP}`;
+  
   try {
-    const { phoneNumber, password } = await request.json();
+    // Check rate limiting
+    const rateLimit = checkRateLimit(rateLimitKey, SECURITY_CONFIG.MAX_LOGIN_ATTEMPTS);
     
-    // Validate input
-    if (!phoneNumber || !password) {
+    if (!rateLimit.allowed) {
+      const retryAfter = rateLimit.resetTime ? Math.ceil((rateLimit.resetTime - Date.now()) / 1000) : 900;
+      
       return NextResponse.json(
-        { error: 'شماره موبایل و رمز عبور الزامی هستند' },
+        { 
+          error: rateLimit.isLocked 
+            ? 'حساب کاربری به دلیل تلاش‌های ناموفق زیاد قفل شده است. لطفا بعدا تلاش کنید.'
+            : 'تعداد تلاش‌های ورود بیش از حد مجاز است. لطفا کمی صبر کنید.',
+          retryAfter 
+        },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': retryAfter.toString(),
+            'X-RateLimit-Limit': SECURITY_CONFIG.MAX_LOGIN_ATTEMPTS.toString(),
+            'X-RateLimit-Remaining': (rateLimit.remainingAttempts || 0).toString(),
+            'X-RateLimit-Reset': (rateLimit.resetTime || Date.now() + 900000).toString()
+          }
+        }
+      );
+    }
+
+    // Parse and validate request body
+    const body = await request.json();
+    const validation = validateAndSanitize(body, authSchemas.login);
+    
+    if (!validation.success) {
+      return NextResponse.json(
+        { 
+          error: 'اطلاعات ورودی نامعتبر است',
+          details: validation.errors 
+        },
         { status: 400 }
       );
     }
+
+    const { phoneNumber, password } = validation.data;
     
-    // Find user by phone number
+    // Find user by phone number with account status
     const user = await prisma.user.findUnique({
-      where: { phoneNumber }
+      where: { phoneNumber },
+      select: {
+        id: true,
+        phoneNumber: true,
+        name: true,
+        hashedPassword: true,
+        role: true,
+        phoneVerified: true,
+        createdAt: true,
+        updatedAt: true
+      }
     });
     
-    // Check if user exists
-    if (!user) {
-      return NextResponse.json(
-        { error: 'کاربری با این شماره موبایل یافت نشد' },
-        { status: 404 }
-      );
-    }
+    // Generic error message to prevent user enumeration
+    const genericError = 'شماره موبایل یا رمز عبور نادرست است';
     
-    // Check if user has a password (they might have registered via other methods)
-    if (!user.hashedPassword) {
+    if (!user || !user.hashedPassword) {
       return NextResponse.json(
-        { error: 'روش احراز هویت نامعتبر است' },
-        { status: 400 }
-      );
-    }
-    
-    // Verify password
-    const passwordMatch = await bcrypt.compare(password, user.hashedPassword);
-    
-    if (!passwordMatch) {
-      return NextResponse.json(
-        { error: 'رمز عبور نادرست است' },
+        { error: genericError },
         { status: 401 }
       );
     }
     
-    // Create JWT token
-    const token = sign(
-      { 
-        id: user.id,
-        phoneNumber: user.phoneNumber,
-        role: user.role
-      },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    // Verify password with timing attack protection
+    const passwordMatch = await bcrypt.compare(password, user.hashedPassword);
     
-    // Set cookie
+    if (!passwordMatch) {
+      // Log failed attempt for monitoring
+      console.warn(`Failed login attempt for phone: ${phoneNumber} from IP: ${clientIP}`);
+      
+      return NextResponse.json(
+        { error: genericError },
+        { status: 401 }
+      );
+    }
+
+    // Check if phone is verified
+    if (!user.phoneVerified) {
+      return NextResponse.json(
+        { 
+          error: 'لطفا ابتدا شماره موبایل خود را تایید کنید',
+          requiresVerification: true 
+        },
+        { status: 403 }
+      );
+    }
+
+    // Reset rate limit on successful login
+    resetRateLimit(rateLimitKey);
+    
+    // Create JWT token with secure settings
+    const tokenPayload = {
+      id: user.id,
+      phoneNumber: user.phoneNumber,
+      role: user.role,
+      verified: user.phoneVerified,
+      iat: Math.floor(Date.now() / 1000),
+    };
+    
+    const token = sign(tokenPayload, SECURITY_CONFIG.JWT_SECRET, { 
+      expiresIn: '7d',
+      algorithm: 'HS256',
+      issuer: 'mobleman-app',
+      audience: 'mobleman-users'
+    });
+    
+    // Set secure cookie
     cookies().set({
       name: 'auth-token',
       value: token,
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
       maxAge: 60 * 60 * 24 * 7, // 7 days
       path: '/',
     });
     
-    // Remove sensitive data
-    const { hashedPassword: _, ...userWithoutPassword } = user;
+    // Log successful login for audit trail
+    console.log(`Successful login for user: ${user.id} from IP: ${clientIP}`);
+    
+    // Return user data without sensitive information
+    const { hashedPassword: _, ...userResponse } = user;
     
     return NextResponse.json(
       { 
         success: true, 
         message: 'ورود با موفقیت انجام شد',
-        user: userWithoutPassword
+        user: userResponse,
+        timestamp: new Date().toISOString()
       },
-      { status: 200 }
+      { 
+        status: 200,
+        headers: {
+          'X-Frame-Options': 'DENY',
+          'X-Content-Type-Options': 'nosniff',
+          'X-XSS-Protection': '1; mode=block'
+        }
+      }
     );
+    
   } catch (error) {
-    console.error('Error logging in:', error);
+    // Log error for monitoring without exposing details
+    console.error('Login error:', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      ip: clientIP,
+      timestamp: new Date().toISOString()
+    });
+    
     return NextResponse.json(
-      { error: 'خطای سرور' },
+      { error: 'خطای داخلی سرور. لطفا بعدا تلاش کنید.' },
       { status: 500 }
     );
   }
