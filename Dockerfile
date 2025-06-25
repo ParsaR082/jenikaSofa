@@ -3,10 +3,12 @@ FROM node:18-alpine AS base
 # Install dependencies needed for Prisma
 RUN apk add --no-cache libc6-compat openssl
 
-# Create symlinks for OpenSSL libraries if they don't exist
+# Create symlinks for OpenSSL libraries to handle version compatibility
 RUN mkdir -p /lib \
-    && if [ ! -e /lib/libssl.so.1.1 ] && [ -e /usr/lib/libssl.so ]; then ln -s /usr/lib/libssl.so /lib/libssl.so.1.1; fi \
-    && if [ ! -e /lib/libcrypto.so.1.1 ] && [ -e /usr/lib/libcrypto.so ]; then ln -s /usr/lib/libcrypto.so /lib/libcrypto.so.1.1; fi
+    && if [ -e /usr/lib/libssl.so.3 ]; then ln -sf /usr/lib/libssl.so.3 /lib/libssl.so.1.1; fi \
+    && if [ -e /usr/lib/libcrypto.so.3 ]; then ln -sf /usr/lib/libcrypto.so.3 /lib/libcrypto.so.1.1; fi \
+    && if [ -e /usr/lib/libssl.so ]; then ln -sf /usr/lib/libssl.so /lib/libssl.so.1.1; fi \
+    && if [ -e /usr/lib/libcrypto.so ]; then ln -sf /usr/lib/libcrypto.so /lib/libcrypto.so.1.1; fi
 
 # Install dependencies
 FROM base AS deps
@@ -36,6 +38,10 @@ ENV PRISMA_SKIP_LIBSSL_COPY 1
 
 # Create public directory if it doesn't exist
 RUN mkdir -p public
+
+# Generate Prisma client during build
+ENV PRISMA_SKIP_LIBSSL_COPY=1
+RUN npx prisma generate
 
 # Build the app
 RUN npm run build
