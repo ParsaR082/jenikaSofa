@@ -5,7 +5,7 @@ const withNextIntl = require('next-intl/plugin')(
 
 const nextConfig = {
   images: {
-    domains: ['utfs.io', 'res.cloudinary.com'],
+    domains: ['localhost'],
     remotePatterns: [
       {
         protocol: 'https',
@@ -13,32 +13,23 @@ const nextConfig = {
       },
     ],
   },
-  // Add Railway-specific configurations
-  poweredByHeader: false,
-  reactStrictMode: true,
-  swcMinify: true,
-  // Configure output for Railway
+  // Disable static optimization to avoid prerendering errors
+  trailingSlash: true,
+  // Force dynamic rendering for all pages
   output: 'standalone',
-  // Disable static exports for problematic routes
-  experimental: {
-    // This will allow Next.js to skip prerendering pages with dynamic data
-    workerThreads: false,
-    cpus: 1
+  // Add CORS headers for API routes
+  async headers() {
+    return [
+      {
+        source: '/api/:path*',
+        headers: [
+          { key: 'Access-Control-Allow-Origin', value: '*' },
+          { key: 'Access-Control-Allow-Methods', value: 'GET, POST, PUT, DELETE, OPTIONS' },
+          { key: 'Access-Control-Allow-Headers', value: 'Content-Type, Authorization' },
+        ],
+      },
+    ];
   },
-  // Disable strict mode for route handling
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
-  // Increase the static generation timeout
-  staticPageGenerationTimeout: 180,
 };
 
-module.exports = withNextIntl({
-  ...nextConfig,
-  // Force all pages to be server-side rendered to avoid static export issues
-  // with internationalization
-  trailingSlash: true
-}); 
+module.exports = withNextIntl(nextConfig); 

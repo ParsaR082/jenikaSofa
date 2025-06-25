@@ -4,6 +4,7 @@ import { MainLayout } from '@/components/layout/main-layout';
 import { Button } from '@/components/ui/button';
 import { formatPrice } from '@/lib/utils';
 import { useParams } from 'next/navigation';
+import { setRequestLocale } from 'next-intl/server';
 
 // Sample featured products
 const featuredProducts = [
@@ -109,6 +110,8 @@ const testimonials = [
 ];
 
 export default function HomePage({ params }: { params: { locale: string } }) {
+  setRequestLocale(params.locale);
+  
   const locale = params.locale;
 
   return (

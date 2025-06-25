@@ -1,4 +1,5 @@
 import React from 'react';
+import { setRequestLocale } from 'next-intl/server';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layout/admin-layout';
 
@@ -25,7 +26,9 @@ const popularProducts = [
   { id: 4, name: 'تخت خواب دو نفره', sales: 7, stock: 3 },
 ];
 
-export default function AdminDashboardPage() {
+export default function AdminPage({ params }: { params: { locale: string } }) {
+  setRequestLocale(params.locale);
+
   return (
     <AdminLayout>
       <div className="space-y-6">
