@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const withNextIntl = require('next-intl/plugin')(
-  './src/i18n/request.ts'
+  './src/i18n.ts'
 );
 
 const nextConfig = {
@@ -19,15 +19,13 @@ const nextConfig = {
   swcMinify: true,
   // Configure output for Railway
   output: 'standalone',
-  // Use dynamic rendering for internationalization
-  i18n: {
-    localeDetection: false
-  },
   // Disable static exports for problematic routes
   experimental: {
     // This will allow Next.js to skip prerendering pages with dynamic data
     workerThreads: false,
-    cpus: 1
+    cpus: 1,
+    // Add PPR (Partial Prerendering) to help with dynamic content
+    ppr: true
   },
   // Disable strict mode for route handling
   typescript: {
@@ -36,6 +34,8 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
+  // Increase the static generation timeout
+  staticPageGenerationTimeout: 180,
 };
 
 module.exports = withNextIntl({
