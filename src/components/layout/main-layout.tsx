@@ -1,23 +1,45 @@
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart, User, Menu } from 'lucide-react';
+import { ShoppingCart as ShoppingCartIcon, User, Menu, Search } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { SearchModal } from '@/components/search-modal';
+import { CartProvider, useCart } from '@/contexts/cart-context';
+import { ShoppingCart } from '@/components/ui/shopping-cart';
 
 interface MainLayoutProps {
   children: React.ReactNode;
 }
 
-export function MainLayout({ children }: MainLayoutProps) {
+function CartButton({ locale }: { locale: string }) {
+  const { state, toggleCart } = useCart();
+  
+  return (
+    <button
+      onClick={toggleCart}
+      className="relative p-2 hover:bg-gray-100 rounded-full transition-colors"
+    >
+      <ShoppingCartIcon className="h-5 w-5" />
+      {state.itemCount > 0 && (
+        <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium">
+          {state.itemCount > 99 ? '99+' : state.itemCount}
+        </span>
+      )}
+      <span className="sr-only">سبد خرید</span>
+    </button>
+  );
+}
+
+function MainLayoutContent({ children }: MainLayoutProps) {
   const params = useParams();
   const locale = params.locale as string;
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
 
   return (
     <div className="flex flex-col min-h-screen">
-      <header className="border-b bg-background sticky top-0 z-50 shadow-sm">
+      <header className="border-b bg-background sticky top-0 z-40 shadow-sm">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
             {/* Logo */}
@@ -42,8 +64,16 @@ export function MainLayout({ children }: MainLayoutProps) {
             </nav>
             
             {/* Search, User, Cart */}
-            <div className="flex items-center space-x-4">
-              <SearchModal locale={locale} />
+            <div className="flex items-center space-x-4 space-x-reverse">
+              <Button 
+                variant="ghost" 
+                size="icon" 
+                className="text-foreground"
+                onClick={() => setIsSearchOpen(true)}
+              >
+                <Search className="h-5 w-5" />
+                <span className="sr-only">جستجو</span>
+              </Button>
               
               <Link href={`/${locale}/login`}>
                 <Button variant="ghost" size="icon" className="text-foreground">
@@ -52,13 +82,7 @@ export function MainLayout({ children }: MainLayoutProps) {
                 </Button>
               </Link>
               
-              <Link href={`/${locale}/cart`}>
-                <Button variant="ghost" size="icon" className="text-foreground relative">
-                  <ShoppingCart className="h-5 w-5" />
-                  <span className="absolute -top-2 -right-2 bg-accent text-accent-foreground text-xs rounded-full w-5 h-5 flex items-center justify-center">0</span>
-                  <span className="sr-only">سبد خرید</span>
-                </Button>
-              </Link>
+              <CartButton locale={locale} />
               
               <Button variant="ghost" size="icon" className="md:hidden text-foreground">
                 <Menu className="h-5 w-5" />
@@ -149,7 +173,7 @@ export function MainLayout({ children }: MainLayoutProps) {
             <p className="text-primary-foreground/80">
               © ۱۴۰۳ مبلمان جنیکا. تمامی حقوق محفوظ است.
             </p>
-            <div className="flex space-x-4 mt-4 md:mt-0">
+            <div className="flex space-x-4 space-x-reverse mt-4 md:mt-0">
               {/* Social Media Icons */}
               <Link href="#" className="text-primary-foreground/80 hover:text-primary-foreground transition-colors">
                 <span className="sr-only">اینستاگرام</span>
@@ -168,6 +192,24 @@ export function MainLayout({ children }: MainLayoutProps) {
           </div>
         </div>
       </footer>
+
+      {/* Search Modal */}
+      <SearchModal 
+        isOpen={isSearchOpen}
+        onClose={() => setIsSearchOpen(false)}
+        locale={locale}
+      />
+      
+      {/* Shopping Cart */}
+      <ShoppingCart locale={locale} />
     </div>
+  );
+}
+
+export function MainLayout({ children }: MainLayoutProps) {
+  return (
+    <CartProvider>
+      <MainLayoutContent>{children}</MainLayoutContent>
+    </CartProvider>
   );
 } 

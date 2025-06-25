@@ -17,11 +17,11 @@ import Link from 'next/link';
 // Mock popular searches and categories
 const popularSearches = ['مبل راحتی', 'میز ناهارخوری', 'کمد لباس', 'تخت خواب', 'مبلمان اداری'];
 const categories = [
-  { name: 'مبلمان راحتی', href: '/products?category=living-room' },
-  { name: 'میز و صندلی', href: '/products?category=tables' },
-  { name: 'مبلمان اتاق خواب', href: '/products?category=bedroom' },
-  { name: 'دکوراسیون', href: '/products?category=decor' },
-  { name: 'مبلمان اداری', href: '/products?category=office' },
+  { name: 'مبلمان راحتی', href: '/products?category=living-room', count: 45 },
+  { name: 'میز و صندلی', href: '/products?category=tables', count: 32 },
+  { name: 'مبلمان اتاق خواب', href: '/products?category=bedroom', count: 28 },
+  { name: 'دکوراسیون', href: '/products?category=decor', count: 18 },
+  { name: 'مبلمان اداری', href: '/products?category=office', count: 15 },
 ];
 
 // Mock suggested products
