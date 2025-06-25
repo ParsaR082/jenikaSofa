@@ -12,13 +12,21 @@ export const SECURITY_CONFIG = {
   RATE_LIMIT_WINDOW: parseInt(process.env.RATE_LIMIT_WINDOW || '900000'), // 15 minutes
   RATE_LIMIT_MAX: parseInt(process.env.RATE_LIMIT_MAX || '100'),
   BCRYPT_ROUNDS: parseInt(process.env.BCRYPT_ROUNDS || '12'),
-  JWT_SECRET: process.env.JWT_SECRET || (() => {
+};
+
+// JWT Secret getter function - validates only when needed
+export function getJWTSecret(): string {
+  const secret = process.env.JWT_SECRET;
+  
+  if (!secret) {
     if (process.env.NODE_ENV === 'production') {
       throw new Error('JWT_SECRET must be set in production!');
     }
-    return 'fallback-dev-secret-key';
-  })(),
-};
+    return 'fallback-dev-secret-key-for-development-only';
+  }
+  
+  return secret;
+}
 
 // Validation Schemas
 export const authSchemas = {

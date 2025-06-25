@@ -9,11 +9,9 @@ import {
   getClientIP,
   checkRateLimit,
   resetRateLimit,
-  validateAndSanitize
+  validateAndSanitize,
+  getJWTSecret
 } from '@/lib/security';
-
-// Secret key for JWT - in production, use environment variables
-const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key';
 
 // In a real app, you would use a database to retrieve users
 // This is just for demonstration
@@ -126,7 +124,7 @@ export async function POST(request: NextRequest) {
       iat: Math.floor(Date.now() / 1000),
     };
     
-    const token = sign(tokenPayload, SECURITY_CONFIG.JWT_SECRET, { 
+    const token = sign(tokenPayload, getJWTSecret(), { 
       expiresIn: '7d',
       algorithm: 'HS256',
       issuer: 'mobleman-app',
