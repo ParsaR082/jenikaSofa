@@ -21,14 +21,47 @@ if (isRailway) {
     
     // Create symlinks for OpenSSL if they don't exist
     try {
-      if (!fs.existsSync('/lib/libssl.so.1.1')) {
-        console.log('Creating symlink for libssl.so.1.1...');
-        execSync('mkdir -p /lib && ln -sf /usr/lib/libssl.so /lib/libssl.so.1.1', { stdio: 'inherit' });
+      // Check all possible OpenSSL paths
+      const possibleLibSSLPaths = [
+        '/usr/lib/libssl.so',
+        '/usr/lib/libssl.so.1.1',
+        '/usr/lib/libssl.so.3',
+        '/lib/libssl.so'
+      ];
+      
+      const possibleLibCryptoPaths = [
+        '/usr/lib/libcrypto.so',
+        '/usr/lib/libcrypto.so.1.1',
+        '/usr/lib/libcrypto.so.3',
+        '/lib/libcrypto.so'
+      ];
+      
+      // Find available OpenSSL libraries
+      let libSSLPath = null;
+      for (const path of possibleLibSSLPaths) {
+        if (fs.existsSync(path)) {
+          libSSLPath = path;
+          break;
+        }
       }
       
-      if (!fs.existsSync('/lib/libcrypto.so.1.1')) {
-        console.log('Creating symlink for libcrypto.so.1.1...');
-        execSync('mkdir -p /lib && ln -sf /usr/lib/libcrypto.so /lib/libcrypto.so.1.1', { stdio: 'inherit' });
+      let libCryptoPath = null;
+      for (const path of possibleLibCryptoPaths) {
+        if (fs.existsSync(path)) {
+          libCryptoPath = path;
+          break;
+        }
+      }
+      
+      // Create symlinks if libraries were found
+      if (libSSLPath && !fs.existsSync('/lib/libssl.so.1.1')) {
+        console.log(`Creating symlink for libssl.so.1.1 from ${libSSLPath}...`);
+        execSync(`mkdir -p /lib && ln -sf ${libSSLPath} /lib/libssl.so.1.1`, { stdio: 'inherit' });
+      }
+      
+      if (libCryptoPath && !fs.existsSync('/lib/libcrypto.so.1.1')) {
+        console.log(`Creating symlink for libcrypto.so.1.1 from ${libCryptoPath}...`);
+        execSync(`mkdir -p /lib && ln -sf ${libCryptoPath} /lib/libcrypto.so.1.1`, { stdio: 'inherit' });
       }
     } catch (symlinkError) {
       console.warn('Warning: Could not create OpenSSL symlinks. This might be due to permissions:', symlinkError);
