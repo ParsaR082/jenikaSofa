@@ -13,6 +13,11 @@ if (isRailway) {
   try {
     // Set environment variables to help Prisma find OpenSSL
     process.env.PRISMA_SKIP_LIBSSL_COPY = "1";
+    process.env.PRISMA_ENGINE_PROTOCOL = "binary";
+    
+    // Force using a specific OpenSSL version
+    process.env.PRISMA_CLI_QUERY_ENGINE_TYPE = "binary";
+    process.env.PRISMA_CLIENT_ENGINE_TYPE = "binary";
     
     // Create symlinks for OpenSSL if they don't exist
     try {
@@ -50,7 +55,15 @@ if (isRailway) {
 } else {
   console.log('Not running in Railway environment, skipping special setup');
   try {
-    execSync('npx prisma generate', { stdio: 'inherit' });
+    // For local development, use standard generation but with environment variables
+    // to help with OpenSSL detection
+    execSync('npx prisma generate', { 
+      stdio: 'inherit',
+      env: {
+        ...process.env,
+        PRISMA_SKIP_LIBSSL_COPY: "1"
+      }
+    });
   } catch (error) {
     console.error('Error generating Prisma client:', error);
     process.exit(1);

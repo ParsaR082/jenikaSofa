@@ -23,9 +23,7 @@ const nextConfig = {
   experimental: {
     // This will allow Next.js to skip prerendering pages with dynamic data
     workerThreads: false,
-    cpus: 1,
-    // Add PPR (Partial Prerendering) to help with dynamic content
-    ppr: true
+    cpus: 1
   },
   // Disable strict mode for route handling
   typescript: {

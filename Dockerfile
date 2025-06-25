@@ -1,74 +1,62 @@
 FROM node:18-alpine AS base
 
-# Install dependencies only when needed
+# Install dependencies needed for Prisma
+RUN apk add --no-cache libc6-compat openssl1.1-compat
+
+# Install dependencies
 FROM base AS deps
-# Add OpenSSL for Prisma with specific version support
-RUN apk add --no-cache libc6-compat openssl openssl-dev
-
-# Create symlinks for libssl and libcrypto to support Prisma
-RUN mkdir -p /lib
-RUN ln -s /usr/lib/libssl.so /lib/libssl.so.1.1
-RUN ln -s /usr/lib/libcrypto.so /lib/libcrypto.so.1.1
-
 WORKDIR /app
 
-# Install dependencies based on the preferred package manager
-COPY package.json package-lock.json* ./
-# Copy scripts and prisma directories for postinstall script
-COPY scripts ./scripts/
-COPY prisma ./prisma/
+# Copy package.json and package-lock.json
+COPY package*.json ./
+
+# Install dependencies
 RUN npm ci
 
-# Rebuild the source code only when needed
+# Build the app
 FROM base AS builder
 WORKDIR /app
+
+# Copy files needed for build
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Next.js collects completely anonymous telemetry data about general usage.
-# Learn more here: https://nextjs.org/telemetry
-# Uncomment the following line in case you want to disable telemetry during the build.
-ENV NEXT_TELEMETRY_DISABLED 1
+# Set environment variables
+ENV NODE_ENV production
+ENV PRISMA_SKIP_LIBSSL_COPY 1
 
-RUN npx prisma generate
+# Build the app
 RUN npm run build
 
-# Production image, copy all the files and run next
+# Production image
 FROM base AS runner
 WORKDIR /app
 
+# Set environment variables
 ENV NODE_ENV production
-ENV NEXT_TELEMETRY_DISABLED 1
+ENV PRISMA_SKIP_LIBSSL_COPY 1
 
-# Install OpenSSL for Prisma in production with symlinks
-RUN apk add --no-cache openssl openssl-dev
-RUN mkdir -p /lib
-RUN ln -s /usr/lib/libssl.so /lib/libssl.so.1.1
-RUN ln -s /usr/lib/libcrypto.so /lib/libcrypto.so.1.1
-
+# Create a non-root user to run the app
 RUN addgroup --system --gid 1001 nodejs
 RUN adduser --system --uid 1001 nextjs
 
+# Copy necessary files from builder
+COPY --from=builder /app/next.config.js ./
 COPY --from=builder /app/public ./public
+COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /app/scripts ./scripts
 
-# Set the correct permission for prerender cache
-RUN mkdir -p .next
-RUN chown nextjs:nodejs .next
+# Set proper ownership
+RUN chown -R nextjs:nodejs /app
 
-# Copy necessary files
-COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=nextjs:nodejs /app/package.json ./package.json
-COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
-COPY --from=builder --chown=nextjs:nodejs /app/scripts ./scripts
-COPY --from=builder --chown=nextjs:nodejs /app/next.config.js ./
-
+# Use the non-root user
 USER nextjs
 
+# Expose the port
 EXPOSE 3000
 
-ENV PORT 3000
-ENV HOSTNAME "0.0.0.0"
-
-# Start the application
-CMD ["npm", "start"] 
+# Start the app
+CMD ["node", "server.js"] 
