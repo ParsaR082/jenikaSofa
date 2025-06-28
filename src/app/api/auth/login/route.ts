@@ -49,37 +49,33 @@ export async function POST(request: NextRequest) {
 
     // Parse and validate request body
     const body = await request.json();
-    const validation = validateAndSanitize(body, authSchemas.login);
     
-    if (!validation.success) {
+    // Simple validation for username/password
+    if (!body.username || !body.password) {
       return NextResponse.json(
-        { 
-          error: 'اطلاعات ورودی نامعتبر است',
-          details: validation.errors 
-        },
+        { error: 'نام کاربری و رمز عبور الزامی است' },
         { status: 400 }
       );
     }
 
-    const { phoneNumber, password } = validation.data;
+    const { username, password } = body;
     
-    // Find user by phone number with account status
+    // Find user by username
     const user = await prisma.user.findUnique({
-      where: { phoneNumber },
+      where: { username },
       select: {
         id: true,
-        phoneNumber: true,
+        username: true,
         name: true,
         hashedPassword: true,
         role: true,
-        phoneVerified: true,
         createdAt: true,
         updatedAt: true
       }
     });
     
     // Generic error message to prevent user enumeration
-    const genericError = 'شماره موبایل یا رمز عبور نادرست است';
+    const genericError = 'نام کاربری یا رمز عبور نادرست است';
     
     if (!user || !user.hashedPassword) {
       return NextResponse.json(
@@ -93,22 +89,11 @@ export async function POST(request: NextRequest) {
     
     if (!passwordMatch) {
       // Log failed attempt for monitoring
-      console.warn(`Failed login attempt for phone: ${phoneNumber} from IP: ${clientIP}`);
+      console.warn(`Failed login attempt for username: ${username} from IP: ${clientIP}`);
       
       return NextResponse.json(
         { error: genericError },
         { status: 401 }
-      );
-    }
-
-    // Check if phone is verified
-    if (!user.phoneVerified) {
-      return NextResponse.json(
-        { 
-          error: 'لطفا ابتدا شماره موبایل خود را تایید کنید',
-          requiresVerification: true 
-        },
-        { status: 403 }
       );
     }
 
@@ -118,17 +103,16 @@ export async function POST(request: NextRequest) {
     // Create JWT token with secure settings
     const tokenPayload = {
       id: user.id,
-      phoneNumber: user.phoneNumber,
+      username: user.username,
       role: user.role,
-      verified: user.phoneVerified,
       iat: Math.floor(Date.now() / 1000),
     };
     
     const token = sign(tokenPayload, getJWTSecret(), { 
       expiresIn: '7d',
       algorithm: 'HS256',
-      issuer: 'mobleman-app',
-      audience: 'mobleman-users'
+      issuer: 'sofa-app',
+      audience: 'sofa-users'
     });
     
     // Set secure cookie

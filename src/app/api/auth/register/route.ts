@@ -41,42 +41,49 @@ export async function POST(request: NextRequest) {
 
     // Parse and validate request body
     const body = await request.json();
-    const validation = validateAndSanitize(body, authSchemas.register);
     
-    if (!validation.success) {
+    // Simple validation for registration
+    if (!body.username || !body.fullName || !body.password) {
       return NextResponse.json(
-        { 
-          error: 'اطلاعات ورودی نامعتبر است',
-          details: validation.errors 
-        },
+        { error: 'تمام فیلدها الزامی هستند' },
         { status: 400 }
       );
     }
-
-    const { phoneNumber, fullName, password } = validation.data;
+    
+    const { username, fullName, password } = body;
+    
+    // Validate username format
+    if (username.length < 3) {
+      return NextResponse.json(
+        { error: 'نام کاربری باید حداقل ۳ کاراکتر باشد' },
+        { status: 400 }
+      );
+    }
+    
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+      return NextResponse.json(
+        { error: 'نام کاربری فقط می‌تواند شامل حروف انگلیسی، اعداد و _ باشد' },
+        { status: 400 }
+      );
+    }
     
     // Additional password strength check
-    const passwordStrength = checkPasswordStrength(password);
-    if (passwordStrength.score < 4) {
+    if (password.length < 8) {
       return NextResponse.json(
-        { 
-          error: 'رمز عبور به اندازه کافی قوی نیست',
-          suggestions: passwordStrength.feedback 
-        },
+        { error: 'رمز عبور باید حداقل ۸ کاراکتر باشد' },
         { status: 400 }
       );
     }
     
-    // Check if phone number is already registered
+    // Check if username is already registered
     const existingUser = await prisma.user.findUnique({
-      where: { phoneNumber },
-      select: { id: true, phoneVerified: true }
+      where: { username },
+      select: { id: true }
     });
     
     if (existingUser) {
-      // Don't reveal whether phone is verified or not for security
       return NextResponse.json(
-        { error: 'این شماره موبایل قبلا ثبت شده است' },
+        { error: 'این نام کاربری قبلا استفاده شده است' },
         { status: 409 }
       );
     }
@@ -88,37 +95,31 @@ export async function POST(request: NextRequest) {
     const user = await prisma.$transaction(async (tx) => {
       const newUser = await tx.user.create({
         data: {
-          phoneNumber,
+          username,
           name: fullName,
           hashedPassword,
-          phoneVerified: false, // Require phone verification
           role: 'USER'
         },
         select: {
           id: true,
-          phoneNumber: true,
+          username: true,
           name: true,
           role: true,
-          phoneVerified: true,
           createdAt: true
         }
       });
       
       // Log user creation for audit trail
-      console.log(`New user registered: ${newUser.id} from IP: ${clientIP}`);
+      console.log(`New user registered: ${newUser.id} (${newUser.username}) from IP: ${clientIP}`);
       
       return newUser;
     });
     
-    // TODO: Send verification SMS
-    // In a real implementation, you'd send a verification code here
-    
     return NextResponse.json(
       { 
         success: true, 
-        message: 'ثبت نام با موفقیت انجام شد. لطفا شماره موبایل خود را تایید کنید.',
+        message: 'ثبت نام با موفقیت انجام شد. می‌توانید وارد شوید.',
         user,
-        requiresVerification: true,
         timestamp: new Date().toISOString()
       },
       { 
@@ -142,7 +143,7 @@ export async function POST(request: NextRequest) {
     // Check for specific database errors
     if (error instanceof Error && error.message.includes('Unique constraint')) {
       return NextResponse.json(
-        { error: 'این شماره موبایل قبلا ثبت شده است' },
+        { error: 'این نام کاربری قبلا استفاده شده است' },
         { status: 409 }
       );
     }

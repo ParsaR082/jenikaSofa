@@ -4,12 +4,14 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 
 interface RegisterFormProps {
-  phoneNumber: string;
+  locale: string;
 }
 
-export function RegisterForm({ phoneNumber }: RegisterFormProps) {
+export function RegisterForm({ locale }: RegisterFormProps) {
+  const [username, setUsername] = useState('');
   const [fullName, setFullName] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -18,10 +20,22 @@ export function RegisterForm({ phoneNumber }: RegisterFormProps) {
   
   const router = useRouter();
 
+  const validateUsername = (username: string) => {
+    if (username.length < 3) return 'نام کاربری باید حداقل ۳ کاراکتر باشد';
+    if (!/^[a-zA-Z0-9_]+$/.test(username)) return 'نام کاربری فقط می‌تواند شامل حروف انگلیسی، اعداد و _ باشد';
+    return null;
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     // Validate inputs
+    const usernameError = validateUsername(username);
+    if (usernameError) {
+      setError(usernameError);
+      return;
+    }
+    
     if (!fullName.trim()) {
       setError('نام و نام خانوادگی الزامی است');
       return;
@@ -41,7 +55,7 @@ export function RegisterForm({ phoneNumber }: RegisterFormProps) {
     setError(null);
     
     try {
-      console.log('Registering user with phone:', phoneNumber);
+      console.log('Registering user with username:', username);
       
       const response = await fetch('/api/auth/register', {
         method: 'POST',
@@ -49,7 +63,7 @@ export function RegisterForm({ phoneNumber }: RegisterFormProps) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          phoneNumber,
+          username,
           fullName,
           password,
         }),
@@ -63,8 +77,8 @@ export function RegisterForm({ phoneNumber }: RegisterFormProps) {
       
       console.log('Registration successful:', data);
       
-      // Redirect to login page or dashboard
-      router.push('/fa/login?registered=true');
+      // Redirect to login page
+      router.push(`/${locale}/login?registered=true`);
     } catch (error) {
       console.error('Registration error:', error);
       setError(error instanceof Error ? error.message : 'خطا در ثبت نام');
@@ -76,13 +90,30 @@ export function RegisterForm({ phoneNumber }: RegisterFormProps) {
   return (
     <div className="space-y-4">
       <div className="text-center">
-        <h2 className="text-xl font-semibold">تکمیل ثبت نام</h2>
+        <h2 className="text-xl font-semibold">ثبت نام</h2>
         <p className="text-muted-foreground mt-2">
-          شماره موبایل شما {phoneNumber} تایید شد
+          برای ایجاد حساب کاربری، اطلاعات زیر را وارد کنید
         </p>
       </div>
       
       <form onSubmit={handleSubmit} className="space-y-4">
+        <div>
+          <label htmlFor="username" className="block text-sm font-medium mb-1">
+            نام کاربری
+          </label>
+          <Input
+            id="username"
+            type="text"
+            value={username}
+            onChange={(e) => setUsername(e.target.value.trim().toLowerCase())}
+            placeholder="نام کاربری منحصر به فرد خود را وارد کنید"
+            disabled={isLoading}
+          />
+          <p className="text-xs text-muted-foreground mt-1">
+            فقط حروف انگلیسی، اعداد و _ مجاز است
+          </p>
+        </div>
+        
         <div>
           <label htmlFor="fullName" className="block text-sm font-medium mb-1">
             نام و نام خانوادگی
@@ -136,6 +167,13 @@ export function RegisterForm({ phoneNumber }: RegisterFormProps) {
         >
           {isLoading ? 'در حال ثبت نام...' : 'ثبت نام'}
         </Button>
+        
+        <div className="text-center text-sm">
+          قبلا ثبت نام کرده‌اید؟{' '}
+          <Link href={`/${locale}/login`} className="text-primary hover:underline">
+            وارد شوید
+          </Link>
+        </div>
       </form>
     </div>
   );

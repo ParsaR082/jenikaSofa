@@ -11,36 +11,18 @@ interface LoginFormProps {
 }
 
 export function LoginForm({ locale }: LoginFormProps) {
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   const router = useRouter();
 
-  // Format phone number as user types
-  const formatPhoneNumber = (input: string) => {
-    // Remove non-digits
-    const digits = input.replace(/\D/g, '');
-    
-    // Ensure it starts with 0
-    if (digits.length > 0 && digits[0] !== '0') {
-      return '0' + digits.slice(0, 10);
-    }
-    
-    return digits.slice(0, 11);
-  };
-
-  // Validate phone number format (simple Iranian mobile format)
-  const isValidPhoneNumber = (phone: string) => {
-    return /^09\d{9}$/.test(phone);
-  };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!isValidPhoneNumber(phoneNumber)) {
-      setError('شماره موبایل نامعتبر است');
+    if (!username.trim()) {
+      setError('نام کاربری الزامی است');
       return;
     }
     
@@ -53,7 +35,7 @@ export function LoginForm({ locale }: LoginFormProps) {
     setError(null);
     
     try {
-      console.log('Logging in with phone:', phoneNumber);
+      console.log('Logging in with username:', username);
       
       const response = await fetch('/api/auth/login', {
         method: 'POST',
@@ -61,7 +43,7 @@ export function LoginForm({ locale }: LoginFormProps) {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          phoneNumber,
+          username,
           password,
         }),
       });
@@ -74,8 +56,12 @@ export function LoginForm({ locale }: LoginFormProps) {
       
       console.log('Login successful:', data);
       
-      // Redirect to dashboard
-      router.push(`/${locale}`);
+      // Redirect based on user role
+      if (data.user.role === 'ADMIN' || data.user.role === 'SUPER_ADMIN') {
+        router.push(`/${locale}/admin`);
+      } else {
+        router.push(`/${locale}`);
+      }
       router.refresh();
     } catch (error) {
       console.error('Login error:', error);
@@ -90,24 +76,21 @@ export function LoginForm({ locale }: LoginFormProps) {
       <div className="text-center">
         <h2 className="text-xl font-semibold">ورود به حساب کاربری</h2>
         <p className="text-muted-foreground mt-2">
-          برای ورود، شماره موبایل و رمز عبور خود را وارد کنید
+          برای ورود، نام کاربری و رمز عبور خود را وارد کنید
         </p>
       </div>
       
       <form onSubmit={handleSubmit} className="space-y-4">
         <div>
-          <label htmlFor="phoneNumber" className="block text-sm font-medium mb-1">
-            شماره موبایل
+          <label htmlFor="username" className="block text-sm font-medium mb-1">
+            نام کاربری
           </label>
           <Input
-            id="phoneNumber"
-            type="tel"
-            inputMode="numeric"
-            placeholder="09123456789"
-            value={phoneNumber}
-            onChange={(e) => setPhoneNumber(formatPhoneNumber(e.target.value))}
-            className="text-left ltr"
-            dir="ltr"
+            id="username"
+            type="text"
+            placeholder="نام کاربری خود را وارد کنید"
+            value={username}
+            onChange={(e) => setUsername(e.target.value.trim())}
             disabled={isLoading}
           />
         </div>
