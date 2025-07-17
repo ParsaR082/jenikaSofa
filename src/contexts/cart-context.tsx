@@ -1,9 +1,11 @@
-'use client';
+"use client";
 
-import React, { createContext, useContext, useReducer, useEffect } from 'react';
+import React, { createContext, useContext, useReducer, useEffect, useCallback, useState } from 'react';
+import { useAuth } from './auth-context';
 
 interface CartItem {
   id: string;
+  productId: string;
   name: string;
   price: number;
   image: string;
@@ -30,185 +32,62 @@ interface CartState {
   wishlist: WishlistItem[];
   isOpen: boolean;
   isLoading: boolean;
+  error: string | null;
   total: number;
   itemCount: number;
 }
 
 type CartAction =
-  | { type: 'ADD_ITEM'; payload: CartItem }
-  | { type: 'REMOVE_ITEM'; payload: string }
-  | { type: 'UPDATE_QUANTITY'; payload: { id: string; quantity: number } }
-  | { type: 'CLEAR_CART' }
-  | { type: 'TOGGLE_CART' }
+  | { type: 'SET_CART'; payload: { items: CartItem[]; total: number; itemCount: number } }
   | { type: 'SET_LOADING'; payload: boolean }
+  | { type: 'SET_ERROR'; payload: string | null }
+  | { type: 'TOGGLE_CART' }
+  | { type: 'CLEAR_CART' }
   | { type: 'ADD_TO_WISHLIST'; payload: WishlistItem }
   | { type: 'REMOVE_FROM_WISHLIST'; payload: string }
-  | { type: 'MOVE_TO_CART'; payload: string }
-  | { type: 'HYDRATE_CART'; payload: Partial<CartState> };
+  | { type: 'SET_WISHLIST'; payload: WishlistItem[] };
 
 const initialState: CartState = {
   items: [],
   wishlist: [],
   isOpen: false,
   isLoading: false,
+  error: null,
   total: 0,
   itemCount: 0,
 };
 
-function calculateTotals(items: CartItem[]) {
-  const total = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
-  return { total, itemCount };
-}
-
 function cartReducer(state: CartState, action: CartAction): CartState {
   switch (action.type) {
-    case 'ADD_ITEM': {
-      const existingItemIndex = state.items.findIndex(
-        item => item.id === action.payload.id && 
-        JSON.stringify(item.variant) === JSON.stringify(action.payload.variant)
-      );
-
-      let newItems: CartItem[];
-      
-      if (existingItemIndex > -1) {
-        // Update existing item quantity
-        newItems = state.items.map((item, index) => {
-          if (index === existingItemIndex) {
-            const newQuantity = Math.min(
-              item.quantity + action.payload.quantity,
-              item.maxStock
-            );
-            return { ...item, quantity: newQuantity };
-          }
-          return item;
-        });
-      } else {
-        // Add new item
-        newItems = [...state.items, action.payload];
-      }
-
-      const { total, itemCount } = calculateTotals(newItems);
-      
+    case 'SET_CART':
       return {
         ...state,
-        items: newItems,
-        total,
-        itemCount,
+        items: action.payload.items,
+        total: action.payload.total,
+        itemCount: action.payload.itemCount,
+        isLoading: false,
+        error: null,
       };
-    }
-
-    case 'REMOVE_ITEM': {
-      const newItems = state.items.filter(item => item.id !== action.payload);
-      const { total, itemCount } = calculateTotals(newItems);
-      
-      return {
-        ...state,
-        items: newItems,
-        total,
-        itemCount,
-      };
-    }
-
-    case 'UPDATE_QUANTITY': {
-      const newItems = state.items.map(item => {
-        if (item.id === action.payload.id) {
-          const newQuantity = Math.max(0, Math.min(action.payload.quantity, item.maxStock));
-          return { ...item, quantity: newQuantity };
-        }
-        return item;
-      }).filter(item => item.quantity > 0);
-
-      const { total, itemCount } = calculateTotals(newItems);
-      
-      return {
-        ...state,
-        items: newItems,
-        total,
-        itemCount,
-      };
-    }
-
-    case 'CLEAR_CART':
-      return {
-        ...state,
-        items: [],
-        total: 0,
-        itemCount: 0,
-      };
-
-    case 'TOGGLE_CART':
-      return {
-        ...state,
-        isOpen: !state.isOpen,
-      };
-
     case 'SET_LOADING':
-      return {
-        ...state,
-        isLoading: action.payload,
-      };
-
-    case 'ADD_TO_WISHLIST': {
-      const isAlreadyInWishlist = state.wishlist.some(item => item.id === action.payload.id);
-      if (isAlreadyInWishlist) return state;
-      
+      return { ...state, isLoading: action.payload };
+    case 'SET_ERROR':
+      return { ...state, error: action.payload, isLoading: false };
+    case 'TOGGLE_CART':
+      return { ...state, isOpen: !state.isOpen };
+    case 'CLEAR_CART':
+      return { ...state, items: [], total: 0, itemCount: 0, error: null };
+    case 'ADD_TO_WISHLIST':
       return {
         ...state,
         wishlist: [...state.wishlist, action.payload],
       };
-    }
-
     case 'REMOVE_FROM_WISHLIST':
       return {
         ...state,
         wishlist: state.wishlist.filter(item => item.id !== action.payload),
       };
-
-    case 'MOVE_TO_CART': {
-      const wishlistItem = state.wishlist.find(item => item.id === action.payload);
-      if (!wishlistItem) return state;
-
-      // Remove from wishlist
-      const newWishlist = state.wishlist.filter(item => item.id !== action.payload);
-      
-      // Add to cart
-      const cartItem: CartItem = {
-        ...wishlistItem,
-        quantity: 1,
-        maxStock: 50, // Default stock
-      };
-
-      const existingCartItem = state.items.find(item => item.id === cartItem.id);
-      let newItems: CartItem[];
-
-      if (existingCartItem) {
-        newItems = state.items.map(item => 
-          item.id === cartItem.id 
-            ? { ...item, quantity: Math.min(item.quantity + 1, item.maxStock) }
-            : item
-        );
-      } else {
-        newItems = [...state.items, cartItem];
-      }
-
-      const { total, itemCount } = calculateTotals(newItems);
-
-      return {
-        ...state,
-        items: newItems,
-        wishlist: newWishlist,
-        total,
-        itemCount,
-      };
-    }
-
-    case 'HYDRATE_CART':
-      return {
-        ...state,
-        ...action.payload,
-      };
-
+    case 'SET_WISHLIST':
+      return { ...state, wishlist: action.payload };
     default:
       return state;
   }
@@ -216,132 +95,231 @@ function cartReducer(state: CartState, action: CartAction): CartState {
 
 interface CartContextType {
   state: CartState;
-  addItem: (item: Omit<CartItem, 'quantity'> & { quantity?: number }) => void;
-  removeItem: (id: string) => void;
-  updateQuantity: (id: string, quantity: number) => void;
-  clearCart: () => void;
+  fetchCart: () => Promise<void>;
+  addItem: (productId: string, quantity?: number, variantData?: any) => Promise<void>;
+  updateQuantity: (itemId: string, quantity: number) => Promise<void>;
+  removeItem: (itemId: string) => Promise<void>;
+  clearCart: () => Promise<void>;
   toggleCart: () => void;
+  isInWishlist: (productId: string) => boolean;
   addToWishlist: (item: WishlistItem) => void;
-  removeFromWishlist: (id: string) => void;
-  moveToCart: (id: string) => void;
-  isInWishlist: (id: string) => boolean;
-  formatPrice: (price: number) => string;
+  removeFromWishlist: (productId: string) => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+async function fetchWishlistFromAPI() {
+  const res = await fetch('/api/wishlist', { credentials: 'include' });
+  if (!res.ok) return [];
+  const data = await res.json();
+  return data.items || [];
+}
+
+async function addToWishlistAPI(productId: string) {
+  await fetch('/api/wishlist', {
+    method: 'POST',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ productId }),
+  });
+}
+
+async function removeFromWishlistAPI(productId: string) {
+  await fetch(`/api/wishlist?productId=${productId}`, {
+    method: 'DELETE',
+    credentials: 'include',
+  });
+}
+
 export function CartProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(cartReducer, initialState);
+  const { user, isLoading: authLoading } = useAuth();
+  const [initialized, setInitialized] = useState(false);
 
-  // Persist cart to localStorage
+  // Load wishlist from backend or localStorage on mount/login
   useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const savedCart = localStorage.getItem('shopping-cart');
-      const savedWishlist = localStorage.getItem('wishlist');
-      
-      if (savedCart || savedWishlist) {
-        const cartData = savedCart ? JSON.parse(savedCart) : { items: [] };
-        const wishlistData = savedWishlist ? JSON.parse(savedWishlist) : [];
-        
-        const { total, itemCount } = calculateTotals(cartData.items || []);
-        
-        dispatch({
-          type: 'HYDRATE_CART',
-          payload: {
-            items: cartData.items || [],
-            wishlist: wishlistData,
-            total,
-            itemCount,
-          },
-        });
+    async function loadWishlist() {
+      if (user) {
+        const items = await fetchWishlistFromAPI();
+        dispatch({ type: 'SET_WISHLIST', payload: items });
+      } else {
+        const storedWishlist = localStorage.getItem('wishlist');
+        if (storedWishlist) {
+          try {
+            const wishlist = JSON.parse(storedWishlist);
+            if (Array.isArray(wishlist)) {
+              dispatch({ type: 'SET_WISHLIST', payload: wishlist });
+            }
+          } catch {}
+        } else {
+          dispatch({ type: 'SET_WISHLIST', payload: [] });
+        }
       }
     }
-  }, []);
+    loadWishlist();
+  }, [user]);
 
-  // Save to localStorage on state changes
+  // Save wishlist to localStorage for guests only
   useEffect(() => {
-    if (typeof window !== 'undefined' && state.items.length >= 0) {
-      localStorage.setItem('shopping-cart', JSON.stringify({
-        items: state.items,
-        total: state.total,
-        itemCount: state.itemCount,
-      }));
-    }
-  }, [state.items, state.total, state.itemCount]);
-
-  useEffect(() => {
-    if (typeof window !== 'undefined' && state.wishlist.length >= 0) {
+    if (!user) {
       localStorage.setItem('wishlist', JSON.stringify(state.wishlist));
     }
-  }, [state.wishlist]);
+  }, [state.wishlist, user]);
 
-  const addItem = (item: Omit<CartItem, 'quantity'> & { quantity?: number }) => {
-    dispatch({
-      type: 'ADD_ITEM',
-      payload: {
-        ...item,
-        quantity: item.quantity || 1,
-      },
-    });
-  };
+  // Fetch cart from backend
+  const fetchCart = useCallback(async () => {
+    if (!user) {
+      dispatch({ type: 'SET_CART', payload: { items: [], total: 0, itemCount: 0 } });
+      return;
+    }
+    dispatch({ type: 'SET_LOADING', payload: true });
+    try {
+      const res = await fetch('/api/cart', { credentials: 'include' });
+      if (!res.ok) throw new Error('Failed to fetch cart');
+      const data = await res.json();
+      const items: CartItem[] = data.items.map((item: any) => ({
+        id: item.id,
+        productId: item.productId,
+        name: item.product.name,
+        price: item.product.price,
+        image: item.product.mainImage,
+        quantity: item.quantity,
+        variant: item.variantData,
+        maxStock: item.product.stock,
+      }));
+      dispatch({ type: 'SET_CART', payload: { items, total: data.total, itemCount: data.itemCount } });
+    } catch (error: any) {
+      dispatch({ type: 'SET_ERROR', payload: error.message || 'Error loading cart' });
+    }
+  }, [user]);
 
-  const removeItem = (id: string) => {
-    dispatch({ type: 'REMOVE_ITEM', payload: id });
-  };
+  // Add item to cart
+  const addItem = useCallback(async (productId: string, quantity = 1, variantData?: any) => {
+    if (!user) return;
+    dispatch({ type: 'SET_LOADING', payload: true });
+    try {
+      const res = await fetch('/api/cart', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productId, quantity, variantData }),
+      });
+      if (!res.ok) throw new Error('Failed to add item');
+      await fetchCart();
+    } catch (error: any) {
+      dispatch({ type: 'SET_ERROR', payload: error.message || 'Error adding item' });
+    }
+  }, [user, fetchCart]);
 
-  const updateQuantity = (id: string, quantity: number) => {
-    dispatch({ type: 'UPDATE_QUANTITY', payload: { id, quantity } });
-  };
+  // Update item quantity
+  const updateQuantity = useCallback(async (itemId: string, quantity: number) => {
+    if (!user) return;
+    dispatch({ type: 'SET_LOADING', payload: true });
+    try {
+      const res = await fetch('/api/cart', {
+        method: 'PUT',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ itemId, quantity }),
+      });
+      if (!res.ok) throw new Error('Failed to update quantity');
+      await fetchCart();
+    } catch (error: any) {
+      dispatch({ type: 'SET_ERROR', payload: error.message || 'Error updating quantity' });
+    }
+  }, [user, fetchCart]);
 
-  const clearCart = () => {
-    dispatch({ type: 'CLEAR_CART' });
-  };
+  // Remove item from cart
+  const removeItem = useCallback(async (itemId: string) => {
+    if (!user) return;
+    dispatch({ type: 'SET_LOADING', payload: true });
+    try {
+      const res = await fetch(`/api/cart?itemId=${itemId}`, {
+        method: 'DELETE',
+        credentials: 'include',
+      });
+      if (!res.ok) throw new Error('Failed to remove item');
+      await fetchCart();
+    } catch (error: any) {
+      dispatch({ type: 'SET_ERROR', payload: error.message || 'Error removing item' });
+    }
+  }, [user, fetchCart]);
 
-  const toggleCart = () => {
+  // Clear cart (remove all items)
+  const clearCart = useCallback(async () => {
+    if (!user) return;
+    dispatch({ type: 'SET_LOADING', payload: true });
+    try {
+      // Remove all items one by one
+      await Promise.all(state.items.map(item => removeItem(item.id)));
+      await fetchCart();
+    } catch (error: any) {
+      dispatch({ type: 'SET_ERROR', payload: error.message || 'Error clearing cart' });
+    }
+  }, [user, state.items, removeItem, fetchCart]);
+
+  // Toggle cart modal
+  const toggleCart = useCallback(() => {
     dispatch({ type: 'TOGGLE_CART' });
-  };
+  }, []);
 
-  const addToWishlist = (item: WishlistItem) => {
-    dispatch({ type: 'ADD_TO_WISHLIST', payload: item });
-  };
+  // تابع بررسی وجود محصول در لیست علاقه‌مندی‌ها
+  const isInWishlist = useCallback(
+    (productId: string) => {
+      return state.wishlist.some(item => item.id === productId);
+    },
+    [state.wishlist]
+  );
 
-  const removeFromWishlist = (id: string) => {
-    dispatch({ type: 'REMOVE_FROM_WISHLIST', payload: id });
-  };
+  // Add to wishlist
+  const addToWishlist = useCallback(async (item: WishlistItem) => {
+    if (user) {
+      await addToWishlistAPI(item.id);
+      const items = await fetchWishlistFromAPI();
+      dispatch({ type: 'SET_WISHLIST', payload: items });
+    } else {
+      dispatch({ type: 'ADD_TO_WISHLIST', payload: item });
+    }
+  }, [user]);
 
-  const moveToCart = (id: string) => {
-    dispatch({ type: 'MOVE_TO_CART', payload: id });
-  };
+  // Remove from wishlist
+  const removeFromWishlist = useCallback(async (productId: string) => {
+    if (user) {
+      await removeFromWishlistAPI(productId);
+      const items = await fetchWishlistFromAPI();
+      dispatch({ type: 'SET_WISHLIST', payload: items });
+    } else {
+      dispatch({ type: 'REMOVE_FROM_WISHLIST', payload: productId });
+    }
+  }, [user]);
 
-  const isInWishlist = (id: string) => {
-    return state.wishlist.some(item => item.id === id);
-  };
-
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('fa-IR', {
-      style: 'currency',
-      currency: 'IRR',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(price);
-  };
-
-  const value: CartContextType = {
-    state,
-    addItem,
-    removeItem,
-    updateQuantity,
-    clearCart,
-    toggleCart,
-    addToWishlist,
-    removeFromWishlist,
-    moveToCart,
-    isInWishlist,
-    formatPrice,
-  };
+  // Fetch cart on login
+  useEffect(() => {
+    if (!authLoading && user && !initialized) {
+      fetchCart();
+      setInitialized(true);
+    }
+    if (!user && initialized) {
+      dispatch({ type: 'CLEAR_CART' });
+      setInitialized(false);
+    }
+  }, [user, authLoading, fetchCart, initialized]);
 
   return (
-    <CartContext.Provider value={value}>
+    <CartContext.Provider
+      value={{
+        state,
+        fetchCart,
+        addItem,
+        updateQuantity,
+        removeItem,
+        clearCart,
+        toggleCart,
+        isInWishlist,
+        addToWishlist,
+        removeFromWishlist,
+      }}
+    >
       {children}
     </CartContext.Provider>
   );

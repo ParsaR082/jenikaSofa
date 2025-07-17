@@ -3,11 +3,12 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { ShoppingCart as ShoppingCartIcon, User, Menu, Search } from 'lucide-react';
+import { ShoppingCart as ShoppingCartIcon, Menu, Search } from 'lucide-react';
 import { useParams } from 'next/navigation';
 import { SearchModal } from '@/components/search-modal';
 import { CartProvider, useCart } from '@/contexts/cart-context';
 import { ShoppingCart } from '@/components/ui/shopping-cart';
+import { UserDropdown } from '@/components/ui/user-dropdown';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -75,12 +76,7 @@ function MainLayoutContent({ children }: MainLayoutProps) {
                 <span className="sr-only">جستجو</span>
               </Button>
               
-              <Link href={`/${locale}/login`}>
-                <Button variant="ghost" size="icon" className="text-foreground">
-                  <User className="h-5 w-5" />
-                  <span className="sr-only">حساب کاربری</span>
-                </Button>
-              </Link>
+              <UserDropdown locale={locale} />
               
               <CartButton locale={locale} />
               

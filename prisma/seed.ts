@@ -1,4 +1,4 @@
-import { PrismaClient, Role } from '@prisma/client';
+import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcrypt';
 
 const prisma = new PrismaClient();
@@ -18,7 +18,7 @@ async function main() {
         name: 'مدیر سیستم',
         email: 'admin@sofa.com',
         hashedPassword,
-        role: Role.SUPER_ADMIN,
+        role: 'SUPER_ADMIN',
       },
     });
     console.log('✅ Admin user created:', adminUser.username);
@@ -33,7 +33,7 @@ async function main() {
         name: 'کاربر نمونه',
         email: 'user@test.com',
         hashedPassword: userPassword,
-        role: Role.USER,
+        role: 'USER',
       },
     });
     console.log('✅ Test user created:', regularUser.username);

@@ -1,0 +1,16 @@
+<svg width="400" height="400" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="400" fill="#fecaca"/>
+  <rect x="25" y="25" width="350" height="350" fill="#ef4444" stroke="#dc2626" stroke-width="2" rx="8"/>
+  <text x="200" y="170" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#991b1b">
+    STUDY DESK
+  </text>
+  <text x="200" y="190" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#991b1b">
+    WITH DRAWER
+  </text>
+  <text x="200" y="215" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#b91c1c">
+    میز تحریر با کشو
+  </text>
+  <text x="200" y="235" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#dc2626">
+    Replace with actual desk image
+  </text>
+</svg> 

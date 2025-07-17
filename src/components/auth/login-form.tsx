@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useRouter } from 'next/navigation';
+import { useAuth } from '@/contexts/auth-context';
 import Link from 'next/link';
 
 interface LoginFormProps {
@@ -17,6 +18,7 @@ export function LoginForm({ locale }: LoginFormProps) {
   const [error, setError] = useState<string | null>(null);
   
   const router = useRouter();
+  const { login } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,11 +58,14 @@ export function LoginForm({ locale }: LoginFormProps) {
       
       console.log('Login successful:', data);
       
+      // Update authentication context
+      login(data.user);
+      
       // Redirect based on user role
       if (data.user.role === 'ADMIN' || data.user.role === 'SUPER_ADMIN') {
         router.push(`/${locale}/admin`);
       } else {
-        router.push(`/${locale}`);
+        router.push(`/${locale}/account`);
       }
       router.refresh();
     } catch (error) {

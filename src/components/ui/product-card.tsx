@@ -4,6 +4,7 @@ import React, { useState } from 'react';
 import Link from 'next/link';
 import { useCart } from '@/contexts/cart-context';
 import { Button } from '@/components/ui/button';
+import { formatPrice } from '@/lib/utils';
 import { 
   Heart, 
   ShoppingCart, 
@@ -44,7 +45,7 @@ export function ProductCard({
   stock = 50,
   locale = 'fa'
 }: ProductCardProps) {
-  const { addItem, isInWishlist, addToWishlist, removeFromWishlist, formatPrice } = useCart();
+  const { addItem, isInWishlist, addToWishlist, removeFromWishlist } = useCart();
   const [isHovered, setIsHovered] = useState(false);
   const [isAdding, setIsAdding] = useState(false);
   const [justAdded, setJustAdded] = useState(false);
@@ -56,24 +57,11 @@ export function ProductCard({
 
   const handleAddToCart = async () => {
     if (!isAvailable || isAdding) return;
-    
     setIsAdding(true);
-    
-    // Simulate API delay
     await new Promise(resolve => setTimeout(resolve, 500));
-    
-    addItem({
-      id,
-      name,
-      price,
-      image,
-      maxStock: stock
-    });
-    
+    await addItem(id, 1); // فقط id و تعداد را ارسال کن
     setIsAdding(false);
     setJustAdded(true);
-    
-    // Reset the "just added" state after 2 seconds
     setTimeout(() => setJustAdded(false), 2000);
   };
 
@@ -86,7 +74,6 @@ export function ProductCard({
       category,
       isAvailable
     };
-
     if (isWishlisted) {
       removeFromWishlist(id);
     } else {

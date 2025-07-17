@@ -1,7 +1,9 @@
+"use client";
+
 import React from 'react';
-import { setRequestLocale } from 'next-intl/server';
 import Link from 'next/link';
 import { AdminLayout } from '@/components/layout/admin-layout';
+import { AdminGuard } from '@/components/auth/admin-guard';
 
 // Sample data for dashboard
 const stats = [
@@ -27,10 +29,9 @@ const popularProducts = [
 ];
 
 export default function AdminPage({ params }: { params: { locale: string } }) {
-  setRequestLocale(params.locale);
-
   return (
-    <AdminLayout>
+    <AdminGuard locale={params.locale}>
+      <AdminLayout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">داشبورد</h1>
@@ -55,7 +56,7 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
             <div className="bg-card rounded-lg border shadow-sm">
               <div className="flex items-center justify-between p-4 border-b">
                 <h2 className="font-semibold">سفارشات اخیر</h2>
-                <Link href="/admin/orders" className="text-sm text-accent hover:underline">
+                <Link href={`/${params.locale}/admin/orders`} className="text-sm text-accent hover:underline">
                   مشاهده همه
                 </Link>
               </div>
@@ -99,7 +100,7 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
             <div className="bg-card rounded-lg border shadow-sm h-full">
               <div className="flex items-center justify-between p-4 border-b">
                 <h2 className="font-semibold">محصولات پرفروش</h2>
-                <Link href="/admin/products" className="text-sm text-accent hover:underline">
+                <Link href={`/${params.locale}/admin/products`} className="text-sm text-accent hover:underline">
                   مشاهده همه
                 </Link>
               </div>
@@ -111,7 +112,7 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
                         <p className="font-medium">{product.name}</p>
                         <p className="text-xs text-muted-foreground">فروش: {product.sales} | موجودی: {product.stock}</p>
                       </div>
-                      <Link href={`/admin/products/${product.id}`} className="text-xs text-accent hover:underline">
+                      <Link href={`/${params.locale}/admin/products/${product.id}/edit`} className="text-xs text-accent hover:underline">
                         ویرایش
                       </Link>
                     </li>
@@ -126,25 +127,25 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
         <div className="bg-card rounded-lg border shadow-sm p-4">
           <h2 className="font-semibold mb-4">دسترسی سریع</h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <Link href="/admin/products/new" className="flex flex-col items-center p-4 bg-muted rounded-lg hover:bg-muted/80">
+            <Link href={`/${params.locale}/admin/products/add`} className="flex flex-col items-center p-4 bg-muted rounded-lg hover:bg-muted/80">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-2 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
               </svg>
               <span className="text-sm">محصول جدید</span>
             </Link>
-            <Link href="/admin/orders" className="flex flex-col items-center p-4 bg-muted rounded-lg hover:bg-muted/80">
+            <Link href={`/${params.locale}/admin/orders`} className="flex flex-col items-center p-4 bg-muted rounded-lg hover:bg-muted/80">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-2 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
               </svg>
               <span className="text-sm">سفارشات</span>
             </Link>
-            <Link href="/admin/users" className="flex flex-col items-center p-4 bg-muted rounded-lg hover:bg-muted/80">
+            <Link href={`/${params.locale}/admin/users`} className="flex flex-col items-center p-4 bg-muted rounded-lg hover:bg-muted/80">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-2 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
               </svg>
               <span className="text-sm">کاربران</span>
             </Link>
-            <Link href="/admin/settings" className="flex flex-col items-center p-4 bg-muted rounded-lg hover:bg-muted/80">
+            <Link href={`/${params.locale}/admin/settings`} className="flex flex-col items-center p-4 bg-muted rounded-lg hover:bg-muted/80">
               <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 mb-2 text-accent" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -155,5 +156,6 @@ export default function AdminPage({ params }: { params: { locale: string } }) {
         </div>
       </div>
     </AdminLayout>
+    </AdminGuard>
   );
 } 

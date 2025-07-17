@@ -6,127 +6,198 @@ import { formatPrice } from '@/lib/utils';
 import { setRequestLocale } from 'next-intl/server';
 import { ProductCard, ProductCardSkeleton } from '@/components/ui/product-card';
 import { Suspense } from 'react';
-
-// Mock product data for demonstration
-const mockProducts = [
-  {
-    id: '1',
-    name: 'مبل راحتی مدرن سه نفره',
-    price: 12500000,
-    originalPrice: 15000000,
-    image: '/api/placeholder/400/400',
-    category: 'مبل',
-    rating: 4.5,
-    reviewCount: 24,
-    isAvailable: true,
-    isFeatured: true,
-    isOnSale: true,
-    stock: 5
-  },
-  {
-    id: '2',
-    name: 'میز عسلی چوبی کلاسیک',
-    price: 3200000,
-    image: '/api/placeholder/400/400',
-    category: 'میز',
-    rating: 4.2,
-    reviewCount: 18,
-    isAvailable: true,
-    isFeatured: false,
-    isOnSale: false,
-    stock: 25
-  },
-  {
-    id: '3',
-    name: 'صندلی اداری ارگونومیک',
-    price: 2800000,
-    originalPrice: 3500000,
-    image: '/api/placeholder/400/400',
-    category: 'صندلی',
-    rating: 4.8,
-    reviewCount: 42,
-    isAvailable: true,
-    isFeatured: false,
-    isOnSale: true,
-    stock: 3
-  },
-  {
-    id: '4',
-    name: 'کمد لباس دو درب آینه‌ای',
-    price: 8900000,
-    image: '/api/placeholder/400/400',
-    category: 'کمد',
-    rating: 4.1,
-    reviewCount: 12,
-    isAvailable: true,
-    isFeatured: false,
-    isOnSale: false,
-    stock: 15
-  },
-  {
-    id: '5',
-    name: 'تخت خواب دو نفره مدرن',
-    price: 18500000,
-    originalPrice: 22000000,
-    image: '/api/placeholder/400/400',
-    category: 'تخت',
-    rating: 4.6,
-    reviewCount: 31,
-    isAvailable: false,
-    isFeatured: true,
-    isOnSale: true,
-    stock: 0
-  },
-  {
-    id: '6',
-    name: 'قفسه کتاب پنج طبقه',
-    price: 4200000,
-    image: '/api/placeholder/400/400',
-    category: 'قفسه',
-    rating: 4.3,
-    reviewCount: 19,
-    isAvailable: true,
-    isFeatured: false,
-    isOnSale: false,
-    stock: 12
-  },
-  {
-    id: '7',
-    name: 'میز تحریر چوبی با کشو',
-    price: 5500000,
-    originalPrice: 6800000,
-    image: '/api/placeholder/400/400',
-    category: 'میز',
-    rating: 4.4,
-    reviewCount: 27,
-    isAvailable: true,
-    isFeatured: false,
-    isOnSale: true,
-    stock: 8
-  },
-  {
-    id: '8',
-    name: 'مبل راحتی تک نفره',
-    price: 7200000,
-    image: '/api/placeholder/400/400',
-    category: 'مبل',
-    rating: 4.7,
-    reviewCount: 35,
-    isAvailable: true,
-    isFeatured: true,
-    isOnSale: false,
-    stock: 6
-  }
-];
+import { prisma } from '@/lib/prisma';
 
 interface ProductsPageProps {
   params: { locale: string };
+  searchParams: { [key: string]: string | string[] | undefined };
+}
+
+async function getProducts(searchParams: any) {
+  try {
+    const page = parseInt(searchParams.page as string || '1');
+    const limit = parseInt(searchParams.limit as string || '12');
+    const category = searchParams.category as string;
+    const search = searchParams.search as string;
+    const minPrice = searchParams.minPrice as string;
+    const maxPrice = searchParams.maxPrice as string;
+    const inStock = searchParams.inStock as string;
+    const featured = searchParams.featured as string;
+    const sortByParam = searchParams.sortBy as string || 'createdAt';
+
+    // Map sortByParam to Prisma orderBy
+    let orderBy: any = { createdAt: 'desc' };
+    if (sortByParam === 'price-asc') orderBy = { price: 'asc' };
+    else if (sortByParam === 'price-desc') orderBy = { price: 'desc' };
+    else if (sortByParam === 'name-asc') orderBy = { name: 'asc' };
+    else if (sortByParam === 'name-desc') orderBy = { name: 'desc' };
+    else if (sortByParam === 'createdAt') orderBy = { createdAt: 'desc' };
+
+    const offset = (page - 1) * limit;
+
+    // Build where clause
+    const where: any = {
+      isPublished: true,
+      isAvailable: true,
+    };
+
+    if (category) {
+      where.categories = {
+        some: {
+          slug: category
+        }
+      };
+    }
+
+    if (search) {
+      where.OR = [
+        { name: { contains: search, mode: 'insensitive' } },
+        { description: { contains: search, mode: 'insensitive' } },
+      ];
+    }
+
+    if (minPrice || maxPrice) {
+      where.price = {};
+      if (minPrice) where.price.gte = parseFloat(minPrice);
+      if (maxPrice) where.price.lte = parseFloat(maxPrice);
+    }
+
+    if (inStock === 'true') {
+      where.stock = { gt: 0 };
+    }
+
+    if (featured === 'true') {
+      where.isFeatured = true;
+    }
+
+    // Fetch products with related data
+    const [products, totalCount] = await Promise.all([
+      prisma.product.findMany({
+        where,
+        select: {
+          id: true,
+          name: true,
+          description: true,
+          price: true,
+          compareAtPrice: true,
+          stock: true,
+          slug: true,
+          isAvailable: true,
+          isFeatured: true,
+          createdAt: true,
+          updatedAt: true,
+          categories: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+            }
+          },
+          images: {
+            where: { isMain: true },
+            select: {
+              url: true,
+              alt: true,
+            },
+            take: 1,
+          },
+          _count: {
+            select: {
+              reviews: true,
+            }
+          },
+          reviews: {
+            select: {
+              rating: true,
+            }
+          }
+        },
+        orderBy,
+        skip: offset,
+        take: limit,
+      }),
+      prisma.product.count({ where })
+    ]);
+
+    // Calculate average rating for each product
+    const productsWithRating = products.map(product => {
+      const avgRating = product.reviews.length > 0
+        ? product.reviews.reduce((sum, review) => sum + review.rating, 0) / product.reviews.length
+        : 0;
+
+      return {
+        ...product,
+        averageRating: Math.round(avgRating * 10) / 10,
+        reviewCount: product._count.reviews,
+        mainImage: product.images[0]?.url || '/images/products/placeholder.svg',
+        reviews: undefined, // Remove reviews array from response
+      };
+    });
+
+    return {
+      products: productsWithRating,
+      pagination: {
+        page,
+        limit,
+        totalCount,
+        totalPages: Math.ceil(totalCount / limit),
+        hasNextPage: page < Math.ceil(totalCount / limit),
+        hasPrevPage: page > 1,
+      }
+    };
+  } catch (error) {
+    console.error('Error fetching products:', error);
+    return {
+      products: [],
+      pagination: {
+        page: 1,
+        limit: 12,
+        totalCount: 0,
+        totalPages: 0,
+        hasNextPage: false,
+        hasPrevPage: false,
+      }
+    };
+  }
+}
+
+async function getCategories() {
+  try {
+    const categories = await prisma.category.findMany({
+      select: {
+        id: true,
+        name: true,
+        slug: true,
+        image: true,
+        _count: {
+          select: {
+            products: true
+          }
+        }
+      },
+      orderBy: {
+        name: 'asc'
+      }
+    });
+
+    return categories;
+  } catch (error) {
+    console.error('Error fetching categories:', error);
+    return [];
+  }
 }
 
 export const dynamic = 'force-dynamic';
 
-export default function ProductsPage({ params: { locale } }: ProductsPageProps) {
+export default async function ProductsPage({ params: { locale }, searchParams }: ProductsPageProps) {
   setRequestLocale(locale);
+  
+  const [productsData, categories] = await Promise.all([
+    getProducts(searchParams),
+    getCategories()
+  ]);
+
+  const { products, pagination } = productsData;
   
   return (
     <MainLayout>
@@ -153,32 +224,42 @@ export default function ProductsPage({ params: { locale } }: ProductsPageProps) 
         </div>
 
         {/* Filter Section */}
-        <div className="bg-white rounded-lg shadow-sm border p-6 mb-8">
+        <form method="GET" className="bg-white rounded-lg shadow-sm border p-6 mb-8">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div className="flex flex-wrap gap-4">
-              <select className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+              <select
+                name="category"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                defaultValue={searchParams.category as string || ''}
+              >
                 <option value="">همه دسته‌ها</option>
-                <option value="sofa">مبل</option>
-                <option value="table">میز</option>
-                <option value="chair">صندلی</option>
-                <option value="wardrobe">کمد</option>
-                <option value="bed">تخت</option>
-                <option value="shelf">قفسه</option>
+                {categories.map((category) => (
+                  <option key={category.id} value={category.slug}>
+                    {category.name} ({category._count.products})
+                  </option>
+                ))}
               </select>
-              
-              <select className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                <option value="">مرتب‌سازی بر اساس</option>
-                <option value="price-low">قیمت: کم به زیاد</option>
-                <option value="price-high">قیمت: زیاد به کم</option>
-                <option value="rating">بالاترین امتیاز</option>
-                <option value="newest">جدیدترین</option>
+
+              <select
+                name="sortBy"
+                className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                defaultValue={searchParams.sortBy as string || 'createdAt'}
+              >
+                <option value="createdAt">مرتب‌سازی بر اساس</option>
+                <option value="price-asc">قیمت: کم به زیاد</option>
+                <option value="price-desc">قیمت: زیاد به کم</option>
+                <option value="name-asc">نام: الف تا ی</option>
+                <option value="name-desc">نام: ی تا الف</option>
               </select>
 
               <div className="flex items-center space-x-2 space-x-reverse">
                 <input
                   type="checkbox"
                   id="available"
+                  name="inStock"
                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  defaultChecked={searchParams.inStock === 'true'}
+                  value="true"
                 />
                 <label htmlFor="available" className="text-sm text-gray-700">
                   فقط کالاهای موجود
@@ -188,20 +269,25 @@ export default function ProductsPage({ params: { locale } }: ProductsPageProps) 
               <div className="flex items-center space-x-2 space-x-reverse">
                 <input
                   type="checkbox"
-                  id="sale"
+                  id="featured"
+                  name="featured"
                   className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  defaultChecked={searchParams.featured === 'true'}
+                  value="true"
                 />
-                <label htmlFor="sale" className="text-sm text-gray-700">
-                  فقط تخفیف‌دار
+                <label htmlFor="featured" className="text-sm text-gray-700">
+                  فقط محصولات ویژه
                 </label>
               </div>
             </div>
 
             <div className="text-sm text-gray-500">
-              {mockProducts.length} محصول
+              {pagination.totalCount} محصول
             </div>
           </div>
-        </div>
+          {/* Visible submit button for filtering */}
+          <button type="submit" className="mt-4 px-6 py-2 bg-blue-600 text-white rounded-lg">اعمال فیلتر</button>
+        </form>
 
         {/* Products Grid */}
         <Suspense fallback={
@@ -211,23 +297,71 @@ export default function ProductsPage({ params: { locale } }: ProductsPageProps) 
             ))}
           </div>
         }>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {mockProducts.map((product) => (
-              <ProductCard
-                key={product.id}
-                {...product}
-                locale={locale}
-              />
-            ))}
-          </div>
+          {products.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {products.map((product) => (
+                <ProductCard
+                  key={product.id}
+                  id={product.id}
+                  name={product.name}
+                  price={product.price}
+                  originalPrice={product.compareAtPrice || undefined}
+                  image={product.mainImage}
+                  category={product.categories[0]?.name || 'بدون دسته'}
+                  rating={product.averageRating}
+                  reviewCount={product.reviewCount}
+                  isAvailable={product.isAvailable}
+                  isFeatured={product.isFeatured}
+                  isOnSale={!!product.compareAtPrice && product.compareAtPrice > product.price}
+                  stock={product.stock}
+                  locale={locale}
+                />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <div className="w-24 h-24 mx-auto bg-muted rounded-lg flex items-center justify-center mb-6">
+                <svg className="h-12 w-12 text-muted-foreground" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold mb-2">محصولی یافت نشد</h3>
+              <p className="text-muted-foreground mb-6">لطفاً فیلترهای خود را تغییر دهید</p>
+              <Button asChild>
+                <Link href={`/${locale}/products`}>
+                  مشاهده همه محصولات
+                </Link>
+              </Button>
+            </div>
+          )}
         </Suspense>
 
-        {/* Load More Button */}
-        <div className="text-center mt-12">
-          <button className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium transition-colors">
-            مشاهده محصولات بیشتر
-          </button>
-        </div>
+        {/* Pagination */}
+        {pagination.totalPages > 1 && (
+          <div className="flex justify-center mt-12">
+            <div className="flex items-center space-x-2 space-x-reverse">
+              {pagination.hasPrevPage && (
+                <Button variant="outline" asChild>
+                  <Link href={`/${locale}/products?page=${pagination.page - 1}`}>
+                    قبلی
+                  </Link>
+                </Button>
+              )}
+              
+              <span className="px-4 py-2 text-sm">
+                صفحه {pagination.page} از {pagination.totalPages}
+              </span>
+              
+              {pagination.hasNextPage && (
+                <Button variant="outline" asChild>
+                  <Link href={`/${locale}/products?page=${pagination.page + 1}`}>
+                    بعدی
+                  </Link>
+                </Button>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Features Section */}
         <div className="mt-16 bg-gray-50 rounded-2xl p-8">
@@ -249,17 +383,17 @@ export default function ProductsPage({ params: { locale } }: ProductsPageProps) 
                 </svg>
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">ضمانت کیفیت</h3>
-              <p className="text-gray-600">ضمانت ۲ ساله برای تمام محصولات</p>
+              <p className="text-gray-600">۵ سال ضمانت برای تمامی محصولات</p>
             </div>
 
             <div className="text-center">
               <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
                 <svg className="w-8 h-8 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192L5.636 18.364M12 2.25a9.75 9.75 0 109.75 9.75A9.75 9.75 0 0012 2.25z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
               <h3 className="text-lg font-semibold text-gray-900 mb-2">پشتیبانی ۲۴/۷</h3>
-              <p className="text-gray-600">آماده پاسخگویی در تمام ساعات شبانه‌روز</p>
+              <p className="text-gray-600">پشتیبانی شبانه‌روزی برای مشتریان</p>
             </div>
           </div>
         </div>

@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useCart } from '@/contexts/cart-context';
 import { Button } from '@/components/ui/button';
+import { useRouter } from 'next/navigation';
 import { 
   ShoppingCart as CartIcon, 
   X, 
@@ -22,9 +23,14 @@ interface ShoppingCartProps {
   locale?: string;
 }
 
+function formatPrice(price: number) {
+  return price.toLocaleString('fa-IR') + ' تومان';
+}
+
 export function ShoppingCart({ locale = 'fa' }: ShoppingCartProps) {
-  const { state, removeItem, updateQuantity, clearCart, toggleCart, formatPrice } = useCart();
+  const { state, removeItem, updateQuantity, clearCart, toggleCart } = useCart();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const router = useRouter();
 
   // Lock body scroll when cart is open
   useEffect(() => {
@@ -33,7 +39,6 @@ export function ShoppingCart({ locale = 'fa' }: ShoppingCartProps) {
     } else {
       document.body.style.overflow = 'unset';
     }
-    
     return () => {
       document.body.style.overflow = 'unset';
     };
@@ -49,10 +54,11 @@ export function ShoppingCart({ locale = 'fa' }: ShoppingCartProps) {
 
   const handleCheckout = async () => {
     setIsCheckingOut(true);
-    // Simulate checkout process
     await new Promise(resolve => setTimeout(resolve, 2000));
-    // Redirect to checkout page
-    window.location.href = `/${locale}/checkout`;
+    console.log('Checkout: closing cart and navigating to', `/${locale}/checkout`);
+    toggleCart();
+    router.push(`/${locale}/checkout`);
+    console.log('Checkout: router.push called');
   };
 
   const shippingThreshold = 5000000; // 5M Toman for free shipping
@@ -70,12 +76,10 @@ export function ShoppingCart({ locale = 'fa' }: ShoppingCartProps) {
         className="fixed inset-0 bg-black bg-opacity-50 z-50 transition-opacity"
         onClick={toggleCart}
       />
-      
       {/* Cart Panel */}
       <div className={`fixed right-0 top-0 h-full w-full max-w-md bg-white z-50 transform transition-transform duration-300 ease-in-out ${
         state.isOpen ? 'translate-x-0' : 'translate-x-full'
       } flex flex-col`}>
-        
         {/* Header */}
         <div className="p-6 pb-4 border-b flex-shrink-0">
           <div className="flex items-center justify-between">
@@ -97,7 +101,21 @@ export function ShoppingCart({ locale = 'fa' }: ShoppingCartProps) {
           </div>
         </div>
 
-        {state.items.length === 0 ? (
+        {/* Loading Spinner Overlay */}
+        {state.isLoading && (
+          <div className="absolute inset-0 bg-white bg-opacity-70 z-50 flex items-center justify-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {state.error && (
+          <div className="bg-red-100 text-red-700 p-4 text-center text-sm">
+            {state.error}
+          </div>
+        )}
+
+        {state.items.length === 0 && !state.isLoading ? (
           // Empty cart state
           <div className="flex-1 flex flex-col items-center justify-center p-8 text-center">
             <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mb-6">

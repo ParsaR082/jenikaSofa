@@ -1,0 +1,16 @@
+<svg width="400" height="400" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="400" fill="#fef3c7"/>
+  <rect x="25" y="25" width="350" height="350" fill="#f59e0b" stroke="#d97706" stroke-width="2" rx="8"/>
+  <text x="200" y="170" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#92400e">
+    BOOKSHELF
+  </text>
+  <text x="200" y="190" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="#92400e">
+    FIVE TIER
+  </text>
+  <text x="200" y="215" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#b45309">
+    قفسه کتاب پنج طبقه
+  </text>
+  <text x="200" y="235" font-family="Arial, sans-serif" font-size="10" text-anchor="middle" fill="#d97706">
+    Replace with actual bookshelf image
+  </text>
+</svg> 

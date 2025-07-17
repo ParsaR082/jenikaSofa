@@ -7,7 +7,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -19,7 +19,7 @@ model User {
   emailVerified   DateTime?
   hashedPassword  String?
   image           String?
-  role            Role      @default(USER)
+  role            String    @default("USER")
   phoneNumber     String?   @unique
   phoneVerified   Boolean   @default(false)
   address         Address[]
@@ -28,9 +28,11 @@ model User {
   accounts        Account[]
   sessions        Session[]
   orders          Order[]
+  cartItems       CartItem[]
   favoriteProducts Product[] @relation("FavoriteProducts")
   reviews         Review[]
   verificationRequests VerificationRequest[]
+  wishlistItems   WishlistItem[]
 }
 
 model Account {
@@ -39,12 +41,12 @@ model Account {
   type              String
   provider          String
   providerAccountId String
-  refresh_token     String? @db.Text
-  access_token      String? @db.Text
+  refresh_token     String?
+  access_token      String?
   expires_at        Int?
   token_type        String?
   scope             String?
-  id_token          String? @db.Text
+  id_token          String?
   session_state     String?
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
@@ -105,7 +107,7 @@ model Address {
 model Category {
   id          String    @id @default(cuid())
   name        String    @unique
-  description String?   @db.Text
+  description String?
   slug        String    @unique
   image       String?
   products    Product[]
@@ -121,7 +123,7 @@ model Category {
 model Product {
   id          String        @id @default(cuid())
   name        String
-  description String        @db.Text
+  description String
   price       Float
   compareAtPrice Float?
   sku         String?       @unique
@@ -142,7 +144,9 @@ model Product {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
   orderItems  OrderItem[]
+  cartItems   CartItem[]
   favoriteBy  User[]        @relation("FavoriteProducts")
+  wishlistItems WishlistItem[]
   
   @@index([slug])
   @@index([isAvailable, isPublished])
@@ -156,7 +160,7 @@ model ProductVariant {
   sku       String?  @unique
   price     Float
   stock     Int      @default(0)
-  options   Json     // Store options like color, size as JSON
+  options   String   // Store options like color, size as JSON string
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
   
@@ -215,9 +219,9 @@ model Order {
   user            User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   addressId       String?
   address         Address?    @relation(fields: [addressId], references: [id])
-  status          OrderStatus @default(PENDING)
-  paymentStatus   PaymentStatus @default(PENDING)
-  paymentMethod   PaymentMethod?
+  status          String @default("PENDING")
+  paymentStatus   String @default("PENDING")  
+  paymentMethod   String?
   paymentId       String?
   totalPrice      Float
   items           OrderItem[]
@@ -225,7 +229,7 @@ model Order {
   tax             Float        @default(0)
   discount        Float        @default(0)
   trackingNumber  String?
-  notes           String?      @db.Text
+  notes           String?
   createdAt       DateTime     @default(now())
   updatedAt       DateTime     @updatedAt
   
@@ -243,7 +247,7 @@ model OrderItem {
   quantity     Int
   price        Float
   totalPrice   Float
-  variantData  Json?   // Snapshot of variant options at time of purchase
+  variantData  String? // Snapshot of variant options at time of purchase
   
   @@index([orderId])
   @@index([productId])
@@ -257,7 +261,7 @@ model Review {
   user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   rating      Int
   title       String?
-  comment     String?  @db.Text
+  comment     String?
   isVerified  Boolean  @default(false)
   isPublished Boolean  @default(true)
   createdAt   DateTime @default(now())
@@ -266,6 +270,22 @@ model Review {
   @@index([productId])
   @@index([userId])
   @@index([rating])
+}
+
+model CartItem {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId    String
+  product      Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  quantity     Int
+  variantData  String?  // JSON string for variant options
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  @@unique([userId, productId, variantData])
+  @@index([userId])
+  @@index([productId])
 }
 
 model Settings {
@@ -282,31 +302,17 @@ model Settings {
   updatedAt    DateTime @updatedAt
 }
 
-enum Role {
-  USER
-  ADMIN
-  SUPER_ADMIN
+model WishlistItem {
+  id        String   @id @default(cuid())
+  userId    String
+  productId String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@unique([userId, productId])
+  @@index([userId])
+  @@index([productId])
 }
 
-enum OrderStatus {
-  PENDING
-  PROCESSING
-  SHIPPED
-  DELIVERED
-  CANCELLED
-  RETURNED
-}
-
-enum PaymentStatus {
-  PENDING
-  PAID
-  FAILED
-  REFUNDED
-}
-
-enum PaymentMethod {
-  CREDIT_CARD
-  BANK_TRANSFER
-  CASH_ON_DELIVERY
-  ONLINE_PAYMENT
-} 
+// Enums converted to String fields for SQLite compatibility 

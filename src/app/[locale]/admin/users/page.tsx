@@ -1,46 +1,86 @@
+"use client";
+
 import React from 'react';
-import { setRequestLocale } from 'next-intl/server';
 import { AdminLayout } from '@/components/layout/admin-layout';
+import { AdminGuard } from '@/components/auth/admin-guard';
+import { AdminDebug } from '@/components/debug/admin-debug';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import Link from 'next/link';
-import { prisma } from '@/lib/prisma';
 
-async function getUsers() {
-  try {
-    const users = await prisma.user.findMany({
-      select: {
-        id: true,
-        username: true,
-        name: true,
-        email: true,
-        role: true,
-        phoneNumber: true,
-        createdAt: true,
-        updatedAt: true,
-        _count: {
-          select: {
-            orders: true
-          }
-        }
-      },
-      orderBy: {
-        createdAt: 'desc'
+export default function AdminUsersPage({ params }: { params: { locale: string } }) {
+  const [users, setUsers] = React.useState<any[]>([]);
+  const [loading, setLoading] = React.useState(true);
+  const [deletingUsers, setDeletingUsers] = React.useState<Set<string>>(new Set());
+
+  const fetchUsers = React.useCallback(async () => {
+    try {
+      const response = await fetch('/api/admin/users', {
+        credentials: 'include'
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setUsers(data.users);
       }
-    });
-    return users;
-  } catch (error) {
-    console.error('Error fetching users:', error);
-    return [];
-  }
-}
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
-export default async function AdminUsersPage({ params }: { params: { locale: string } }) {
-  setRequestLocale(params.locale);
-  const users = await getUsers();
+  React.useEffect(() => {
+    fetchUsers();
+  }, [fetchUsers]);
+
+  const handleDeleteUser = async (userId: string, username: string) => {
+    if (!confirm(`آیا از حذف کاربر "${username}" مطمئن هستید؟`)) {
+      return;
+    }
+
+    setDeletingUsers(prev => new Set(prev).add(userId));
+
+    try {
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        method: 'DELETE',
+        credentials: 'include'
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        alert('کاربر با موفقیت حذف شد');
+        await fetchUsers(); // Refresh the users list
+      } else {
+        alert(result.error || 'خطا در حذف کاربر');
+      }
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      alert('خطا در ارتباط با سرور');
+    } finally {
+      setDeletingUsers(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(userId);
+        return newSet;
+      });
+    }
+  };
+
+  if (loading) {
+    return (
+      <AdminGuard locale={params.locale}>
+        <AdminLayout>
+          <div className="flex items-center justify-center py-10">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          </div>
+        </AdminLayout>
+      </AdminGuard>
+    );
+  }
 
   return (
-    <AdminLayout>
+    <AdminGuard locale={params.locale}>
+      <AdminLayout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-2xl font-bold">مدیریت کاربران</h1>
@@ -56,6 +96,9 @@ export default async function AdminUsersPage({ params }: { params: { locale: str
             </Button>
           </div>
         </div>
+
+        {/* Debug Panel */}
+        <AdminDebug />
 
         {/* Stats */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -113,7 +156,7 @@ export default async function AdminUsersPage({ params }: { params: { locale: str
                          user.role === 'ADMIN' ? 'ادمین' : 'کاربر'}
                       </span>
                     </td>
-                    <td className="p-3 text-sm">{user._count.orders}</td>
+                    <td className="p-3 text-sm">{user._count?.orders || 0}</td>
                     <td className="p-3 text-sm">
                       {new Date(user.createdAt).toLocaleDateString('fa-IR')}
                     </td>
@@ -132,13 +175,10 @@ export default async function AdminUsersPage({ params }: { params: { locale: str
                           <Button
                             variant="destructive"
                             size="sm"
-                            onClick={() => {
-                              if (confirm('آیا از حذف این کاربر مطمئن هستید؟')) {
-                                // Handle delete
-                              }
-                            }}
+                            onClick={() => handleDeleteUser(user.id, user.username)}
+                            disabled={deletingUsers.has(user.id)}
                           >
-                            حذف
+                            {deletingUsers.has(user.id) ? 'در حال حذف...' : 'حذف'}
                           </Button>
                         )}
                       </div>
@@ -157,5 +197,6 @@ export default async function AdminUsersPage({ params }: { params: { locale: str
         )}
       </div>
     </AdminLayout>
+    </AdminGuard>
   );
 } 

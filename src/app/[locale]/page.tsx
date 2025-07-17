@@ -1,10 +1,10 @@
+"use client";
+
 import React from 'react';
 import Link from 'next/link';
 import { MainLayout } from '@/components/layout/main-layout';
 import { Button } from '@/components/ui/button';
 import { formatPrice } from '@/lib/utils';
-import { useParams } from 'next/navigation';
-import { setRequestLocale } from 'next-intl/server';
 
 // Sample featured products
 const featuredProducts = [
@@ -12,38 +12,38 @@ const featuredProducts = [
     id: 1,
     name: 'مبل راحتی کلاسیک',
     price: 1250,
-    image: '/placeholder.svg',
+    image: '/images/products/classic-comfort-sofa.svg',
     category: 'مبلمان پذیرایی',
   },
   {
     id: 2,
     name: 'مبل ال مدرن',
     price: 1850,
-    image: '/placeholder.svg',
+    image: '/images/products/modern-l-shaped-sofa.svg',
     category: 'مبلمان پذیرایی',
   },
   {
     id: 3,
     name: 'میز ناهارخوری چوبی',
     price: 750,
-    image: '/placeholder.svg',
+    image: '/images/products/wooden-dining-table.svg',
     category: 'میز ناهارخوری',
   },
   {
     id: 4,
     name: 'تخت خواب دو نفره',
     price: 950,
-    image: '/placeholder.svg',
+    image: '/images/products/double-bed-frame.svg',
     category: 'مبلمان اتاق خواب',
   },
 ];
 
 // Categories
 const categories = [
-  { id: 'living-room', name: 'مبلمان پذیرایی', image: '/placeholder.svg' },
-  { id: 'dining', name: 'میز ناهارخوری', image: '/placeholder.svg' },
-  { id: 'bedroom', name: 'مبلمان اتاق خواب', image: '/placeholder.svg' },
-  { id: 'office', name: 'مبلمان اداری', image: '/placeholder.svg' },
+  { id: 'living-room', name: 'مبلمان پذیرایی', image: '/images/categories/living-room-furniture.svg' },
+  { id: 'dining', name: 'میز ناهارخوری', image: '/images/categories/dining-room-furniture.svg' },
+  { id: 'bedroom', name: 'مبلمان اتاق خواب', image: '/images/categories/bedroom-furniture.svg' },
+  { id: 'office', name: 'مبلمان اداری', image: '/images/categories/office-furniture.svg' },
 ];
 
 // Features
@@ -110,8 +110,6 @@ const testimonials = [
 ];
 
 export default function HomePage({ params }: { params: { locale: string } }) {
-  setRequestLocale(params.locale);
-  
   const locale = params.locale;
 
   return (
@@ -141,8 +139,12 @@ export default function HomePage({ params }: { params: { locale: string } }) {
               </div>
             </div>
             <div className="w-full md:w-1/2">
-              <div className="aspect-[4/3] bg-muted-foreground/10 rounded-lg flex items-center justify-center text-muted-foreground">
-                تصویر هیرو
+              <div className="aspect-[4/3] rounded-lg overflow-hidden">
+                <img 
+                  src="/images/hero/hero-main-banner.svg" 
+                  alt="مبلمان با کیفیت و طراحی منحصر به فرد" 
+                  className="w-full h-full object-cover"
+                />
               </div>
             </div>
           </div>
@@ -188,9 +190,11 @@ export default function HomePage({ params }: { params: { locale: string } }) {
                 href={`/${locale}/products?category=${category.id}`}
                 className="group relative overflow-hidden rounded-lg aspect-square"
               >
-                <div className="absolute inset-0 bg-muted flex items-center justify-center text-muted-foreground">
-                  تصویر دسته‌بندی
-                </div>
+                <img 
+                  src={category.image} 
+                  alt={category.name}
+                  className="absolute inset-0 w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                />
                 <div className="absolute inset-0 bg-gradient-to-t from-black/70 to-transparent flex items-end p-6">
                   <h3 className="text-white text-xl font-bold">{category.name}</h3>
                 </div>
@@ -213,9 +217,11 @@ export default function HomePage({ params }: { params: { locale: string } }) {
             {featuredProducts.map((product) => (
               <Link href={`/${locale}/products/${product.id}`} key={product.id} className="group">
                 <div className="aspect-square bg-muted rounded-lg overflow-hidden relative mb-4">
-                  <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                    تصویر محصول
-                  </div>
+                  <img 
+                    src={product.image} 
+                    alt={product.name}
+                    className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-105"
+                  />
                   <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
                     <Button size="icon" variant="secondary" className="rounded-full w-8 h-8">
                       <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

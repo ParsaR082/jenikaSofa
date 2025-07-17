@@ -17,7 +17,12 @@ export default function middleware(request: NextRequest) {
   // Apply internationalization middleware first
   const response = intlMiddleware(request);
   
-  // Add comprehensive security headers
+  // Only apply basic security headers in development
+  if (process.env.NODE_ENV === 'development') {
+    return response;
+  }
+  
+  // Add comprehensive security headers for production
   const secureHeaders = {
     // Prevent XSS attacks
     'X-XSS-Protection': '1; mode=block',
@@ -72,57 +77,6 @@ export default function middleware(request: NextRequest) {
       response.headers.delete(key);
     }
   });
-  
-  // Add rate limiting headers for API routes
-  if (request.nextUrl.pathname.startsWith('/api/')) {
-    response.headers.set('X-RateLimit-Limit', '100');
-    response.headers.set('X-RateLimit-Window', '900'); // 15 minutes
-  }
-  
-  // Block suspicious user agents
-  const userAgent = request.headers.get('user-agent') || '';
-  const suspiciousAgents = [
-    'sqlmap',
-    'nmap',
-    'nikto',
-    'curl',
-    'wget',
-    'python-requests',
-    'bot',
-    'spider',
-    'crawler'
-  ];
-  
-  if (suspiciousAgents.some(agent => userAgent.toLowerCase().includes(agent))) {
-    // Log suspicious request
-    console.warn(`Blocked suspicious user agent: ${userAgent} from IP: ${request.ip}`);
-    
-    return new NextResponse('Access Denied', { 
-      status: 403,
-      headers: secureHeaders as Record<string, string>
-    });
-  }
-  
-  // Check for common attack patterns in URL
-  const url = request.nextUrl.pathname + request.nextUrl.search;
-  const attackPatterns = [
-    /(\b(SELECT|INSERT|UPDATE|DELETE|DROP|CREATE|ALTER|EXEC|UNION)\b)/i,
-    /<script/i,
-    /javascript:/i,
-    /on\w+=/i,
-    /\.\.\//,
-    /\/etc\/passwd/,
-    /\/admin/i
-  ];
-  
-  if (attackPatterns.some(pattern => pattern.test(url))) {
-    console.warn(`Blocked malicious request: ${url} from IP: ${request.ip}`);
-    
-    return new NextResponse('Bad Request', { 
-      status: 400,
-      headers: secureHeaders as Record<string, string>
-    });
-  }
   
   return response;
 }

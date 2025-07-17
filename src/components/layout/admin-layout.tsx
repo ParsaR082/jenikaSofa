@@ -1,17 +1,28 @@
+"use client";
+
 import Link from 'next/link';
 import React from 'react';
+import { useAuth } from '@/contexts/auth-context';
+import { Button } from '@/components/ui/button';
 
 interface AdminLayoutProps {
   children: React.ReactNode;
 }
 
 export function AdminLayout({ children }: AdminLayoutProps) {
+  const { user, logout } = useAuth();
+
   return (
     <div className="min-h-screen flex">
       {/* Sidebar */}
       <div className="w-64 bg-card border-l shadow-sm hidden md:block">
         <div className="p-4 border-b">
           <h2 className="font-bold text-lg">پنل مدیریت</h2>
+          {user && (
+            <p className="text-sm text-muted-foreground mt-1">
+              {user.name || user.username}
+            </p>
+          )}
         </div>
         <nav className="p-2">
           <ul className="space-y-1">
@@ -70,6 +81,18 @@ export function AdminLayout({ children }: AdminLayoutProps) {
                 </svg>
                 تنظیمات
               </Link>
+            </li>
+            <li className="mt-4 pt-4 border-t">
+              <Button 
+                variant="ghost" 
+                className="w-full justify-start text-destructive hover:text-destructive hover:bg-destructive/10"
+                onClick={logout}
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                خروج
+              </Button>
             </li>
           </ul>
         </nav>

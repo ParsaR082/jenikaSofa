@@ -1,0 +1,13 @@
+<svg width="400" height="400" xmlns="http://www.w3.org/2000/svg">
+  <rect width="400" height="400" fill="#ede9fe"/>
+  <rect x="25" y="25" width="350" height="350" fill="#8b5cf6" stroke="#7c3aed" stroke-width="2" rx="8"/>
+  <text x="200" y="180" font-family="Arial, sans-serif" font-size="18" font-weight="bold" text-anchor="middle" fill="#5b21b6">
+    BEDROOM
+  </text>
+  <text x="200" y="205" font-family="Arial, sans-serif" font-size="18" font-weight="bold" text-anchor="middle" fill="#5b21b6">
+    FURNITURE
+  </text>
+  <text x="200" y="230" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#6d28d9">
+    مبلمان اتاق خواب
+  </text>
+</svg> 

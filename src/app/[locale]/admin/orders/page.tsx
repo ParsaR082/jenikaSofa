@@ -46,7 +46,7 @@ async function getOrders() {
   }
 }
 
-const statusColors = {
+const statusColors: Record<string, string> = {
   PENDING: 'bg-yellow-100 text-yellow-800',
   PROCESSING: 'bg-blue-100 text-blue-800',
   SHIPPED: 'bg-purple-100 text-purple-800',
@@ -55,14 +55,14 @@ const statusColors = {
   RETURNED: 'bg-gray-100 text-gray-800',
 };
 
-const paymentStatusColors = {
+const paymentStatusColors: Record<string, string> = {
   PENDING: 'bg-yellow-100 text-yellow-800',
   PAID: 'bg-green-100 text-green-800',
   FAILED: 'bg-red-100 text-red-800',
   REFUNDED: 'bg-gray-100 text-gray-800',
 };
 
-const statusLabels = {
+const statusLabels: Record<string, string> = {
   PENDING: 'در انتظار',
   PROCESSING: 'در حال پردازش',
   SHIPPED: 'ارسال شده',
@@ -71,7 +71,7 @@ const statusLabels = {
   RETURNED: 'مرجوع شده',
 };
 
-const paymentStatusLabels = {
+const paymentStatusLabels: Record<string, string> = {
   PENDING: 'در انتظار پرداخت',
   PAID: 'پرداخت شده',
   FAILED: 'پرداخت ناموفق',
@@ -161,13 +161,13 @@ export default async function AdminOrdersPage({ params }: { params: { locale: st
                       {order.totalPrice.toLocaleString('fa-IR')} تومان
                     </td>
                     <td className="p-3 text-sm">
-                      <span className={`px-2 py-1 rounded-full text-xs ${statusColors[order.status]}`}>
-                        {statusLabels[order.status]}
+                      <span className={`px-2 py-1 rounded-full text-xs ${statusColors[order.status] || 'bg-gray-100 text-gray-800'}`}>
+                        {statusLabels[order.status] || order.status}
                       </span>
                     </td>
                     <td className="p-3 text-sm">
-                      <span className={`px-2 py-1 rounded-full text-xs ${paymentStatusColors[order.paymentStatus]}`}>
-                        {paymentStatusLabels[order.paymentStatus]}
+                      <span className={`px-2 py-1 rounded-full text-xs ${paymentStatusColors[order.paymentStatus] || 'bg-gray-100 text-gray-800'}`}>
+                        {paymentStatusLabels[order.paymentStatus] || order.paymentStatus}
                       </span>
                     </td>
                     <td className="p-3 text-sm">
