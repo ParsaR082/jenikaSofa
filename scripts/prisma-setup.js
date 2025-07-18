@@ -12,15 +12,13 @@ if (isRailway) {
   try {
     // Set environment variables to help Prisma
     process.env.PRISMA_SKIP_LIBSSL_COPY = "1";
-    process.env.PRISMA_ENGINE_PROTOCOL = "binary";
     
     console.log('Generating Prisma client...');
     execSync('npx prisma generate', { 
       stdio: 'inherit',
       env: {
         ...process.env,
-        PRISMA_SKIP_LIBSSL_COPY: "1",
-        PRISMA_ENGINE_PROTOCOL: "binary"
+        PRISMA_SKIP_LIBSSL_COPY: "1"
       }
     });
     
